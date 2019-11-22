@@ -256,7 +256,7 @@ BoxCollider:
   m_GameObject: {fileID: 47478484}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -323,6 +323,7 @@ MonoBehaviour:
   depthPerception: 25
   energy: 0
   epsilon: 1
+  jumpVelocity: 0
   mass: 65
   monocFOV: 78.5
   moveSpeed: 2.777777
@@ -705,7 +706,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1738290243
 Transform:
   m_ObjectHideFlags: 0

@@ -4,6 +4,17 @@ using UnityEngine;
 
 public class PredMove : MonoBehaviour
 {
+    // Enumerate the Predator movement states
+    // *** need to determine how to handle jumps ***
+    public enum PredatorMove
+    {
+        Rest,
+        Idle,
+        Wander,
+        Hunt,
+        Pursue
+    };
+
     Predator pred;
     Rigidbody rb;
 
