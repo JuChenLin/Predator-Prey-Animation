@@ -286,3 +286,5 @@
 /define:CSHARP_7_OR_LATER
 /define:CSHARP_7_3_OR_NEWER
 Assets\Scripts\LandAnimal.cs
+Assets\Scripts\Predator.cs
+Assets\Scripts\PredMove.cs

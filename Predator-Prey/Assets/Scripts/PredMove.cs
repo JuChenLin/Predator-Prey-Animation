@@ -15,15 +15,25 @@ public class PredMove : MonoBehaviour
         Pursue
     };
 
-    Predator pred;
-    Rigidbody rb;
+    bool isJumping = false;
+    public Predator pred;
+    public Rigidbody rb;
 
     // FixedUpdate is called a number of times based upon current frame rate
     // All physics calculations and updates occur immediately after FixedUpdate
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
-        rb.velocity = transform.forward * pred.moveSpeed;
+        
+        //rb.velocity = transform.forward * pred.moveSpeed;
+        //rb.AddForce(transform.forward * pred.moveSpeed, ForceMode.VelocityChange);
+
+        
+        if(!isJumping)
+        {
+           isJumping = true;
+           pred.Jump(new Vector3(0.0f, Mathf.Sin(45.0f * Mathf.Deg2Rad), Mathf.Cos(45.0f * Mathf.Deg2Rad)));
+        }
     }
 
     // Start is called before the first frame update
@@ -31,11 +41,12 @@ public class PredMove : MonoBehaviour
     {
         pred = GetComponent<Predator>();
         rb = GetComponent<Rigidbody>();
+        //rb.AddForce(transform.forward * pred.moveSpeed, ForceMode.VelocityChange);
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        //transform.position += transform.forward * pred.moveSpeed * Time.deltaTime;
     }
 }
