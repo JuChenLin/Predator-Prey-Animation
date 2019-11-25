@@ -7,6 +7,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     public Rigidbody rb;
 
     // EXPERIMENTAL
+    // get position of "forefeet" to check for sharply raised terrain
+    [SerializeField] private Vector3 foreFeet = new Vector3();
     // get previous position of the Predator in world space
     [SerializeField] private Vector3 prevPosition = new Vector3();
     // length of the Ray to evaluate terrain (could place in own function?)
@@ -16,7 +18,7 @@ public class Predator : MonoBehaviour, ILandAnimal
     // decreased velocity increments (m/s^2), with minimum of 0
     [SerializeField] private float speedDown = 0.0f;
     // calculated max turning radius for the current velocity
-    [SerializeField] private float turnRadius = 360.0f;
+    [SerializeField] private float turnRadius = 180.0f;
     // calculated view point of the Predator
     [SerializeField] private Vector3 viewPoint = new Vector3();
     
@@ -65,13 +67,13 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float maxTurn()
     {
         if (speed == 0.0f)
-            return 360.0f;
+            return 180.0f;
 
         //float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
         float turn = (breakForce * Time.deltaTime) / (pMass * speed);
 
-        if ((turn * Mathf.Rad2Deg) > 360.0f)
-            return 360.0f;
+        if ((turn * Mathf.Rad2Deg) > 180.0f)
+            return 180.0f;
         else
             return turn * Mathf.Rad2Deg;
     }
@@ -99,10 +101,15 @@ public class Predator : MonoBehaviour, ILandAnimal
         // set Transform Position y-value to half of Scale y-value
         transform.position.Set(0.0f, pSize.y * 0.5f, 0.0f);
         //transform.position.Set(0.0f, pSize.y * 0.5f + 1.0f, 0.0f);
-        prevPosition = transform.position;
+
+        //prevPosition = transform.position;
+        // TESTING ONLY
+        prevPosition = rb.position;
+        
         // set viewpoint for Raycasting, simulating environmental awareness
         viewPoint.Set(transform.position.x, transform.position.y + (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
-
+        // set position of "forefeet" to navigate sharply raised terrain
+        foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
 
@@ -115,12 +122,13 @@ public class Predator : MonoBehaviour, ILandAnimal
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
-        //speed = rb.velocity.z;
-        //speed = transform.InverseTransformVector(rb.velocity).z;
-        //turnRadius = maxTurn();
-        //viewPoint.Set(transform.position.x, transform.position.y + (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
-        //rayLength = Mathf.Pow(speed, 2.0f) / -speedDown;
-        //Debug.DrawRay(viewPoint, new Vector3(0.0f, -(pSize.y + 0.1f), rayLength));
+        speed = ((rb.position - prevPosition).magnitude) / Time.fixedDeltaTime;
+        prevPosition = rb.position;
+    }
+
+    public Vector3 getPrevPosition()
+    {
+        return prevPosition;
     }
 
     public void Jump(Vector3 normalVec)
@@ -137,12 +145,19 @@ public class Predator : MonoBehaviour, ILandAnimal
     // Update is called once per frame
     void Update()
     {
+        /*
         speed = ((transform.position - prevPosition).magnitude) / Time.deltaTime;
         prevPosition = transform.position;
         turnRadius = maxTurn();
         viewPoint.Set(transform.position.x, transform.position.y + (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
+        foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         rayLength = Mathf.Pow(speed, 2.0f) / -speedDown;
-        Debug.DrawRay(viewPoint, new Vector3(0.0f, -pSize.y, rayLength) * 1000.0f, Color.red);
+        Debug.DrawRay(viewPoint, new Vector3(0.0f, -pSize.y, rayLength) * 1000.0f, Color.blue);
+        // Debug.DrawRay(foreFeet, transform.forward * speed * Time.deltaTime, Color.red);
+        // TEST ONLY
+        Debug.DrawRay(foreFeet, transform.forward * speed, Color.red);
+
         Debug.DrawRay(transform.position, Vector3.down * pSize.y * 0.5f);
+        */
     }
 }
