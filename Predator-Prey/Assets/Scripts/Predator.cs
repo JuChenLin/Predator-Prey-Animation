@@ -46,8 +46,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float maxStandJump = 7.672027f;
 
     // mass in kg
-    //public float pMass = 65.0f;
-    public float pMass = 1.0f;
+    public float pMass = 65.0f;
+
     // monocFOV is monocular field of vision, in degrees
     public float monocFOV = 78.5f;
     // normal move speed in m/s
@@ -69,8 +69,16 @@ public class Predator : MonoBehaviour, ILandAnimal
         if (speed == 0.0f)
             return 180.0f;
 
-        //float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
-        float turn = (breakForce * Time.deltaTime) / (pMass * speed);
+        float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
+        // float turn = (breakForce * Time.deltaTime) / (pMass * speed);
+
+        /*
+        Debug.Log("breakforce: " + breakForce);
+        Debug.Log("pMass: " + pMass);
+        Debug.Log("speed: " + speed);
+        Debug.Log("turn (rads): " + turn);
+        Debug.Log("turn (degs): " + turn * Mathf.Rad2Deg);
+        */
 
         if ((turn * Mathf.Rad2Deg) > 180.0f)
             return 180.0f;
@@ -124,6 +132,7 @@ public class Predator : MonoBehaviour, ILandAnimal
     {
         speed = ((rb.position - prevPosition).magnitude) / Time.fixedDeltaTime;
         prevPosition = rb.position;
+        turnRadius = maxTurn();
     }
 
     public Vector3 getPrevPosition()
