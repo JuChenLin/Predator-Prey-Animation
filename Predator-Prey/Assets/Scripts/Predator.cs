@@ -116,10 +116,11 @@ public class Predator : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        viewPoint = (transform.Find("b_eyelid_left_upper").position + transform.Find("b_eyelid_right_upper").position) * 0.5f;
+        //viewPoint = (transform.Find("b_eyelid_left_upper").position + transform.Find("b_eyelid_right_upper").position) * 0.5f;
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
+        //jawPoint = transform.Find("b_Jaw").position;
 
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;

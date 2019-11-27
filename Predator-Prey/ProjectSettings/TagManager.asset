@@ -3,7 +3,9 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - tag_Predator
+  - tag_Prey
   layers:
   - Default
   - TransparentFX
@@ -13,10 +15,10 @@ TagManager:
   - UI
   - 
   - 
-  - Self
-  - Dummy Target
-  - 
-  - 
+  - layer_Predator
+  - layer_Prey
+  - layer_Dummy Target
+  - layer_Obstacle
   - 
   - 
   - 
