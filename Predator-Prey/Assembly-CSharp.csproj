@@ -45,12 +45,17 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>     <Compile Include="Assets\Mountain Terrain\Misc\CameraDefault.cs" />
+     <Compile Include="Assets\Scripts\LandAnimal.cs" />
      <Compile Include="Assets\Scripts\Predator.cs" />
+     <Compile Include="Assets\Scripts\PredMove.cs" />
      <Compile Include="Assets\Scripts\Prey.cs" />
      <None Include="Assets\laxer tree pkg\README.txt" />
      <None Include="Assets\Samples\Terrain Tools\0.1.0-preview\Terrain Assets\ThirdPartyNotices.txt" />
  <Reference Include="Unity.Timeline.Editor">
  <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
+ </Reference>
+ <Reference Include="Unity.TerrainTools">
+ <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TerrainTools.dll</HintPath>
  </Reference>
  <Reference Include="Unity.VSCode.Editor">
  <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
@@ -73,14 +78,11 @@
  <Reference Include="Unity.TextMeshPro">
  <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
  </Reference>
- <Reference Include="UnityEditor.UI">
- <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
- </Reference>
- <Reference Include="Unity.TerrainTools">
- <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TerrainTools.dll</HintPath>
- </Reference>
  <Reference Include="Unity.TerrainTools.Editor">
  <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TerrainTools.Editor.dll</HintPath>
+ </Reference>
+ <Reference Include="UnityEditor.UI">
+ <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>
  </Reference>
  <Reference Include="UnityEngine">
  <HintPath>C:/Program Files/Unity/Hub/Editor/2019.2.12f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
