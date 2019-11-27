@@ -62,7 +62,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\DummyTarget.cs" />
+    <Compile Include="Assets\Scripts\CameraController.cs" />
     <Compile Include="Assets\Scripts\LandAnimal.cs" />
+    <Compile Include="Assets\Scripts\MarioController.cs" />
     <Compile Include="Assets\Scripts\Predator.cs" />
     <Compile Include="Assets\Scripts\PredMove.cs" />
     <Reference Include="Unity.Timeline.Editor">

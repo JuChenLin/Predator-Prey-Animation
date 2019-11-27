@@ -8,7 +8,9 @@ public class Predator : MonoBehaviour, ILandAnimal
 
     // EXPERIMENTAL
     // get position of "forefeet" to check for sharply raised terrain
-    [SerializeField] private Vector3 foreFeet = new Vector3();
+    //[SerializeField] private Vector3 foreFeet = new Vector3();
+    // get position of jaw for eating prey
+    [SerializeField] private Vector3 jawPoint = new Vector3();
     // get previous position of the Predator in world space
     [SerializeField] private Vector3 prevPosition = new Vector3();
     // length of the Ray to evaluate terrain (could place in own function?)
@@ -21,7 +23,7 @@ public class Predator : MonoBehaviour, ILandAnimal
     [SerializeField] private float turnRadius = 180.0f;
     // calculated view point of the Predator
     [SerializeField] private Vector3 viewPoint = new Vector3();
-    
+
     // the type of land animal (Predator or Prey)
     private string type;
 
@@ -39,7 +41,7 @@ public class Predator : MonoBehaviour, ILandAnimal
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
     // distance in meters from a target for an automatic kill
-    public float epsilon = 1.0f;
+    public float epsilon = 10.0f;
 
     // EXPERIMENTAL
     // max initial velocity (m/s) from a standing jump
@@ -51,7 +53,7 @@ public class Predator : MonoBehaviour, ILandAnimal
     // monocFOV is monocular field of vision, in degrees
     public float monocFOV = 78.5f;
     // normal move speed in m/s
-    public float moveSpeed = 2.777777f;
+    public float moveSpeed = 4.470389f;
 
     // EXPERIMENTAL
     // scale multiples applied to model's transform
@@ -70,7 +72,6 @@ public class Predator : MonoBehaviour, ILandAnimal
             return 180.0f;
 
         float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
-        // float turn = (breakForce * Time.deltaTime) / (pMass * speed);
 
         /*
         Debug.Log("breakforce: " + breakForce);
@@ -113,11 +114,13 @@ public class Predator : MonoBehaviour, ILandAnimal
         //prevPosition = transform.position;
         // TESTING ONLY
         prevPosition = rb.position;
-        
-        // set viewpoint for Raycasting, simulating environmental awareness
-        viewPoint.Set(transform.position.x, transform.position.y + (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
+
+        // set viewpoint for Raycasting, simulating environmental awareness/FOV
+        viewPoint = (transform.Find("b_eyelid_left_upper").position + transform.Find("b_eyelid_right_upper").position) * 0.5f;
         // set position of "forefeet" to navigate sharply raised terrain
-        foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
+        // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
+        // set jaw point for determining epsilon distance
+
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
 
@@ -140,11 +143,11 @@ public class Predator : MonoBehaviour, ILandAnimal
         return prevPosition;
     }
 
-    public void Jump(Vector3 normalVec)
+    public float getSpeed()
     {
-        rb.velocity = (normalVec * maxStandJump);
+        return speed;
     }
-    
+
     // Start is called before the first frame update
     void Start()
     {
