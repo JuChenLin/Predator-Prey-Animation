@@ -15,28 +15,30 @@ public class PreyMove : MonoBehaviour
         Idle,
         Wander,
         Reck,
+        Hide,
         Evade
     };
 
     public Animator anim;
-    public Predator prey;
+    public Prey prey;
     public Rigidbody rb;
-    // used for hunting predator
-    public GameObject pred;
-    // used for the sight and jaw trigger colliders
-    public SphereCollider[] tColl;
+    // used for target predator
+    public Rigidbody pred;
+    // used for the sight trigger colliders
+    public SphereCollider tColl;
 
     private bool isJumping = false;
     // current moving state of the Prey
     private PreyStates pmState;
 
     // used to store the obstacle mask
-    int obstacleMask;
+    private int obstacleMask;
     // used to store the predator mask
-    int predMask;
+    private int predMask;
 
     // TESTING ONLY
-    int dummyMask;
+    private int dummyMask;
+    // public Rigidbody dummy;
 
     // get speed value of the Prey
     public float currSpeed = 0.0f;
@@ -47,16 +49,44 @@ public class PreyMove : MonoBehaviour
         prey = GetComponent<Prey>();
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
-        tColl = GetComponents<SphereCollider>();
+        tColl = GetComponent<SphereCollider>();
 
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         predMask = LayerMask.NameToLayer("layer_Pred");
 
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
+    }
 
-        tColl[0].radius = prey.depthPerception;
-        tColl[1].radius = prey.epsilon;
+    // isWatchful parameter includes Reck and Hide states
+    bool CheckFOV(Rigidbody other, bool isWatchful)
+    {
+        // Vector3 toPredator = rb.position - other.position;
+        Vector3 toPredator = other.position - prey.GetBodyPositions()[0];
+
+        float angleToPredator = Vector3.Angle(toPredator, transform.right);
+
+        Debug.Log("angleToPredator: " + angleToPredator);
+        Debug.Log("hunting FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
+        if(angleToPredator < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)))
+        {
+            RaycastHit hit;
+
+            if(Physics.Raycast(prey.GetBodyPositions()[0], toPredator.normalized, out hit, tColl.radius, 1 << dummyMask))
+            {     
+                if (hit.collider.attachedRigidbody == other)
+                {
+                    Debug.Log("returned true in FOV");
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("hit " + hit.rigidbody.gameObject.name);
+                }
+            }
+        }
+
+        return false;
     }
 
     // FixedUpdate is called a number of times based upon current frame rate
@@ -64,7 +94,7 @@ public class PreyMove : MonoBehaviour
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
-        currSpeed = prey.getSpeed();
+        currSpeed = prey.GetSpeed();
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
@@ -100,12 +130,12 @@ public class PreyMove : MonoBehaviour
             // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // SPECIFIC TO DEER MODEL
-            //rb.MovePosition(rb.position + transform.right * prey.moveSpeed * Time.fixedDeltaTime);
+            rb.MovePosition(rb.position + transform.right * prey.moveSpeed * Time.fixedDeltaTime);
 
             // seeks position while attempting to keep cover
             if (!isJumping)
             {
-                Flee(targetMovePos);
+                //Flee(targetMovePos);
             }
         }
         else if (pmState == PreyStates.Evade)
@@ -117,7 +147,6 @@ public class PreyMove : MonoBehaviour
 
             // CHANGE to Rigidbody for prey
             DummyTarget dt = pred.GetComponent<DummyTarget>();
-
             if(dt.maxSpeed == 0.0f)
             {
                 predFuturePos = pred.transform.position;
@@ -128,7 +157,11 @@ public class PreyMove : MonoBehaviour
             Flee(predFuturePos);
             Debug.Log("distance is " + (pred.transform.position - rb.position).magnitude);
 
-            //if (((prey.transform.position + prey.transform.forward * -0.5f) - rb.position).magnitude <= pred.epsilon)
+            if (!pred.gameObject.activeSelf)
+            {
+                pmState = PreyStates.Reck;
+                Debug.Log("Back to reck...");
+            }
         }
     }
 
@@ -144,13 +177,7 @@ public class PreyMove : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Prey triggered!");
-        if (other.tag == "tag_Predator" && other.gameObject == prey)
-        {
-            Debug.Log("deactivation of prey");
-            pred.SetActive(false);
-            pmState = PreyStates.Reck;
-        }
+
     }
 
     // implement behavior to flee from a target position
@@ -160,7 +187,7 @@ public class PreyMove : MonoBehaviour
         float changeAngle = 0.0f;
 
         // calculate current velocity (m/s)
-        Vector3 curVelocity = (prey.rb.position - prey.getPrevPosition()) / Time.fixedDeltaTime;
+        Vector3 curVelocity = (prey.rb.position - prey.GetPrevPosition()) / Time.fixedDeltaTime;
         // Debug.Log("current velocity is " + curVelocity);
 
         // desired straight-line velocity to ascape
@@ -203,22 +230,29 @@ public class PreyMove : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        tColl.center = prey.GetBodyPositions()[0];
+        tColl.radius = prey.depthPerception;
         // Set initial state to an idle Prey
-        // pmState = Prey.Idle;
+        // pmState = PreyStates.Idle;
 
         //TESTING ONLY
         pmState = PreyStates.Reck;
 
         // Look for existing targets only 
-        Collider[] inRange = Physics.OverlapSphere(tColl[0].center, tColl[0].radius, ~dummyMask);
+        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << dummyMask);
 
         Debug.Log("inRange length is " + inRange.Length);
 
-        if (inRange.Length > 0)
+        if (inRange.Length > 0 && pmState == PreyStates.Reck)
         {
-            pmState = PreyStates.Evade;
-            pred = inRange[1].gameObject;
-            Debug.Log("Predator is located at " + pred.transform.position);
+            Rigidbody potentPredator = inRange[0].attachedRigidbody;
+
+            if (potentPredator && CheckFOV(potentPredator, true))
+            {
+                pmState = PreyStates.Evade;
+                pred = potentPredator;
+                Debug.Log("Predator is located at " + pred.transform.position);
+            }
         }
     }
 

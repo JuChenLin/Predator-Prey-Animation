@@ -147,6 +147,7 @@ public class PredMove : MonoBehaviour
 
             // CHANGE to Rigidbody for prey
             DummyTarget dt = prey.GetComponent<DummyTarget>();
+            
             if(dt.maxSpeed == 0.0f)
             {
                 preyFuturePos = prey.transform.position;
