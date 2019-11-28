@@ -19,10 +19,10 @@ public class EatPrey : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (pm.prey && other.tag == "tag_Prey" && other.gameObject == pm.prey)
+        if (pm.prey && other.tag == "tag_Prey" && other.attachedRigidbody == pm.prey)
         {
             Debug.Log("deactivation of prey");
-            pm.prey.SetActive(false);
+            pm.prey.gameObject.SetActive(false);
         }
     }
 

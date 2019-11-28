@@ -23,7 +23,7 @@ public class PredMove : MonoBehaviour
     public Predator pred;
     public Rigidbody rb;
     // used for target prey
-    public GameObject prey;
+    public Rigidbody prey;
     // used for the sight trigger collider
     public SphereCollider tColl;
 
@@ -32,12 +32,13 @@ public class PredMove : MonoBehaviour
     private PredatorMove pmState;
 
     // used to store the obstacle mask
-    int obstacleMask;
+    private int obstacleMask;
     // used to store the prey mask
-    int preyMask;
+    private int preyMask;
 
     // TESTING ONLY
-    int dummyMask;
+    private int dummyMask;
+    // public Rigidbody dummy;
 
     // get speed value of the Predator
     private float currSpeed = 0.0f;
@@ -55,6 +56,37 @@ public class PredMove : MonoBehaviour
 
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
+    }
+
+    // isHunting parameter includes Hunt and Stalk states
+    bool CheckFOV(Rigidbody other, bool isHunting)
+    {
+        // Vector3 toPrey = rb.position - other.position;
+        Vector3 toPrey = other.position - pred.GetBodyPositions()[0];
+
+        float angleToPrey = Vector3.Angle(toPrey, transform.right);
+
+        Debug.Log("angleToPrey: " + angleToPrey);
+        Debug.Log("hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
+        if(angleToPrey < (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)))
+        {
+            RaycastHit hit;
+
+            if(Physics.Raycast(pred.GetBodyPositions()[0], toPrey.normalized, out hit, tColl.radius, 1 << dummyMask))
+            {     
+                if (hit.collider.attachedRigidbody == other)
+                {
+                    Debug.Log("returned true in FOV");
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("hit " + hit.rigidbody.gameObject.name);
+                }
+            }
+        }
+
+        return false;
     }
 
     // FixedUpdate is called a number of times based upon current frame rate
@@ -125,7 +157,7 @@ public class PredMove : MonoBehaviour
             Seek(preyFuturePos);
             Debug.Log("distance is " + (prey.transform.position - rb.position).magnitude);
 
-            if (!prey.activeSelf)
+            if (!prey.gameObject.activeSelf)
             {
                 pmState = PredatorMove.Hunt;
                 Debug.Log("Back to hunt...");
@@ -212,11 +244,16 @@ public class PredMove : MonoBehaviour
 
         Debug.Log("inRange length is " + inRange.Length);
 
-        if (inRange.Length > 0)
+        if (inRange.Length > 0 && pmState == PredatorMove.Hunt)
         {
-            pmState = PredatorMove.Pursue;
-            prey = inRange[0].gameObject;
-            Debug.Log("Prey is located at " + prey.transform.position);
+            Rigidbody potentPrey = inRange[0].attachedRigidbody;
+
+            if (potentPrey && CheckFOV(potentPrey, true))
+            {
+                pmState = PredatorMove.Pursue;
+                prey = potentPrey;
+                Debug.Log("Prey is located at " + prey.transform.position);
+            }
         }
     }
 
