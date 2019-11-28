@@ -9,7 +9,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     // EXPERIMENTAL
     // get position of "forefeet" to check for sharply raised terrain
     //[SerializeField] private Vector3 foreFeet = new Vector3();
-    // get position of jaw for eating prey
+    // get position of jaw and jaw's offset from the Predator's position
+    [SerializeField] private Vector3 jawPointOffset = new Vector3();
     [SerializeField] private Vector3 jawPoint = new Vector3();
     // get previous position of the Predator in world space
     [SerializeField] private Vector3 prevPosition = new Vector3();
@@ -21,7 +22,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     [SerializeField] private float speedDown = 0.0f;
     // calculated max turning radius for the current velocity
     [SerializeField] private float turnRadius = 180.0f;
-    // calculated view point of the Predator
+    // calculated viewpoint and viewpoint offset from the Predator's position
+    [SerializeField] private Vector3 viewPointOffset = new Vector3();
     [SerializeField] private Vector3 viewPoint = new Vector3();
 
     // the type of land animal (Predator or Prey)
@@ -40,8 +42,6 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float depthPerception = 25.0f;
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
-    // distance in meters from a target for an automatic kill
-    public float epsilon = 10.0f;
 
     // EXPERIMENTAL
     // max initial velocity (m/s) from a standing jump
@@ -66,7 +66,7 @@ public class Predator : MonoBehaviour, ILandAnimal
 
     // calculate the max turning radius given current velocity
     // returns degrees
-    public float maxTurn()
+    public float MaxTurn()
     {
         if (speed == 0.0f)
             return 180.0f;
@@ -116,17 +116,36 @@ public class Predator : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        //viewPoint = (transform.Find("b_eyelid_left_upper").position + transform.Find("b_eyelid_right_upper").position) * 0.5f;
+        viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
+            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
+        viewPoint = rb.position + viewPointOffset;
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
-        //jawPoint = transform.Find("b_Jaw").position;
+        jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
+        jawPoint = rb.position + jawPointOffset;
 
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
 
         // calculate maximum deceleration value (m/s^2)
         speedDown = -breakForce / pMass;
+    }
+
+    public Transform FindDeepChild(Transform parent, string childName)
+    {
+        foreach (Transform child in parent)
+        {
+            if (child.name == childName)
+                return child;
+
+            Transform result = FindDeepChild(child, childName);
+
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 
     // FixedUpdate is called a number of times based upon current frame rate
@@ -136,15 +155,24 @@ public class Predator : MonoBehaviour, ILandAnimal
     {
         speed = ((rb.position - prevPosition).magnitude) / Time.fixedDeltaTime;
         prevPosition = rb.position;
-        turnRadius = maxTurn();
+        turnRadius = MaxTurn();
+        viewPoint = rb.position + viewPointOffset;
+        jawPoint = rb.position + jawPointOffset;
     }
 
-    public Vector3 getPrevPosition()
+
+    public Vector3[] GetBodyPositions()
+    {
+        Vector3[] bodyPos = {viewPoint, jawPoint};
+        return bodyPos;
+    }
+
+    public Vector3 GetPrevPosition()
     {
         return prevPosition;
     }
 
-    public float getSpeed()
+    public float GetSpeed()
     {
         return speed;
     }
