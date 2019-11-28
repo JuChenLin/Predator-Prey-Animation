@@ -23,21 +23,22 @@ public class PredMove : MonoBehaviour
     public Predator pred;
     public Rigidbody rb;
     // used for target prey
-    public GameObject prey;
-    // used for the sight and jaw trigger colliders
-    public SphereCollider[] tColl;
+    public Rigidbody prey;
+    // used for the sight trigger collider
+    public SphereCollider tColl;
 
     private bool isJumping = false;
     // current moving state of the Predator
     private PredatorMove pmState;
 
     // used to store the obstacle mask
-    int obstacleMask;
+    private int obstacleMask;
     // used to store the prey mask
-    int preyMask;
+    private int preyMask;
 
     // TESTING ONLY
-    int dummyMask;
+    private int dummyMask;
+    // public Rigidbody dummy;
 
     // get speed value of the Predator
     private float currSpeed = 0.0f;
@@ -48,16 +49,44 @@ public class PredMove : MonoBehaviour
         pred = GetComponent<Predator>();
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
-        tColl = GetComponents<SphereCollider>();
+        tColl = GetComponent<SphereCollider>();
 
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         preyMask = LayerMask.NameToLayer("layer_Prey");
 
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
+    }
 
-        tColl[0].radius = pred.depthPerception;
-        tColl[1].radius = pred.epsilon;
+    // isHunting parameter includes Hunt and Stalk states
+    bool CheckFOV(Rigidbody other, bool isHunting)
+    {
+        // Vector3 toPrey = rb.position - other.position;
+        Vector3 toPrey = other.position - pred.GetBodyPositions()[0];
+
+        float angleToPrey = Vector3.Angle(toPrey, transform.right);
+
+        Debug.Log("angleToPrey: " + angleToPrey);
+        Debug.Log("hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
+        if(angleToPrey < (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)))
+        {
+            RaycastHit hit;
+
+            if(Physics.Raycast(pred.GetBodyPositions()[0], toPrey.normalized, out hit, tColl.radius, 1 << dummyMask))
+            {     
+                if (hit.collider.attachedRigidbody == other)
+                {
+                    Debug.Log("returned true in FOV");
+                    return true;
+                }
+                else
+                {
+                    Debug.Log("hit " + hit.rigidbody.gameObject.name);
+                }
+            }
+        }
+
+        return false;
     }
 
     // FixedUpdate is called a number of times based upon current frame rate
@@ -65,7 +94,7 @@ public class PredMove : MonoBehaviour
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
-        currSpeed = pred.getSpeed();
+        currSpeed = pred.GetSpeed();
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
@@ -106,7 +135,7 @@ public class PredMove : MonoBehaviour
             // seeks position while attempting to keep cover
             if (!isJumping)
             {
-                Seek(huntMovePos);
+                // Seek(huntMovePos);
             }
         }
         else if (pmState == PredatorMove.Pursue)
@@ -128,7 +157,11 @@ public class PredMove : MonoBehaviour
             Seek(preyFuturePos);
             Debug.Log("distance is " + (prey.transform.position - rb.position).magnitude);
 
-            //if (((prey.transform.position + prey.transform.forward * -0.5f) - rb.position).magnitude <= pred.epsilon)
+            if (!prey.gameObject.activeSelf)
+            {
+                pmState = PredatorMove.Hunt;
+                Debug.Log("Back to hunt...");
+            }
         }
     }
 
@@ -144,13 +177,7 @@ public class PredMove : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log("triggered!");
-        if (other.tag == "tag_Prey" && other.gameObject == prey)
-        {
-            Debug.Log("deactivation of prey");
-            prey.SetActive(false);
-            pmState = PredatorMove.Hunt;
-        }
+        
     }
 
     // implement behavior to seek a target position
@@ -160,7 +187,7 @@ public class PredMove : MonoBehaviour
         float changeAngle = 0.0f;
 
         // calculate current velocity (m/s)
-        Vector3 curVelocity = (pred.rb.position - pred.getPrevPosition()) / Time.fixedDeltaTime;
+        Vector3 curVelocity = (pred.rb.position - pred.GetPrevPosition()) / Time.fixedDeltaTime;
         // Debug.Log("current velocity is " + curVelocity);
 
         // desired straight-line velocity to target
@@ -185,13 +212,13 @@ public class PredMove : MonoBehaviour
         // check to see if angle exceeds max
         if (changeAngle > 0.0f)
         {
-            if (pred.maxTurn() < changeAngle)
-                useAngle = pred.maxTurn();
+            if (pred.MaxTurn() < changeAngle)
+                useAngle = pred.MaxTurn();
         }
         else
         {
-            if (pred.maxTurn() < Mathf.Abs(changeAngle))
-                useAngle = -pred.maxTurn();
+            if (pred.MaxTurn() < Mathf.Abs(changeAngle))
+                useAngle = -pred.MaxTurn();
         }
 
         // Debug.Log("Angle between destination and new vectors is " + changeAngle);
@@ -204,6 +231,8 @@ public class PredMove : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        tColl.center = pred.GetBodyPositions()[0];
+        tColl.radius = pred.depthPerception;
         // Set initial state to an idle Predator
         //pmState = PredatorMove.Idle;
 
@@ -211,15 +240,20 @@ public class PredMove : MonoBehaviour
         pmState = PredatorMove.Hunt;
 
         // Look for existing targets only 
-        Collider[] inRange = Physics.OverlapSphere(tColl[0].center, tColl[0].radius, ~dummyMask);
+        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << dummyMask);
 
         Debug.Log("inRange length is " + inRange.Length);
 
-        if (inRange.Length > 0)
+        if (inRange.Length > 0 && pmState == PredatorMove.Hunt)
         {
-            pmState = PredatorMove.Pursue;
-            prey = inRange[1].gameObject;
-            Debug.Log("Prey is located at " + prey.transform.position);
+            Rigidbody potentPrey = inRange[0].attachedRigidbody;
+
+            if (potentPrey && CheckFOV(potentPrey, true))
+            {
+                pmState = PredatorMove.Pursue;
+                prey = potentPrey;
+                Debug.Log("Prey is located at " + prey.transform.position);
+            }
         }
     }
 

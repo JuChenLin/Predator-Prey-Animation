@@ -44,8 +44,10 @@
     <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
-  <ItemGroup>     <Compile Include="Assets\Scripts\Predator.cs" />
+  <ItemGroup>     <Compile Include="Assets\EatPrey.cs" />
+     <Compile Include="Assets\Scripts\Predator.cs" />
      <Compile Include="Assets\Scripts\PredMove.cs" />
+     <Compile Include="Assets\Scripts\Prey.cs" />
      <Compile Include="Assets\Scripts\PreyMove.cs" />
  <Reference Include="Unity.Timeline.Editor">
  <HintPath>C:/Users/JuChen/Documents/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
