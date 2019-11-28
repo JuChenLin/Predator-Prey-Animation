@@ -319,6 +319,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 0}
+  currVelocity: {x: 0, y: 0, z: 0}
   jawPointOffset: {x: 0, y: 0, z: 0}
   jawPoint: {x: 0, y: 0, z: 0}
   prevPosition: {x: 0, y: 0, z: 0}
@@ -1261,8 +1262,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currSpeed: 0
-  accel: 1
-  maxSpeed: 2
+  accel: 10
+  maxSpeed: 19
 --- !u!114 &1563151832
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1579,6 +1580,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 0}
+  currVelocity: {x: 0, y: 0, z: 0}
   jawPointOffset: {x: 0, y: 0, z: 0}
   jawPoint: {x: 0, y: 0, z: 0}
   prevPosition: {x: 0, y: 0, z: 0}
@@ -1596,7 +1598,7 @@ MonoBehaviour:
   maxStandJump: 7.672027
   pMass: 65
   monocFOV: 78.5
-  moveSpeed: 4.470389
+  moveSpeed: 22
   pSize: {x: 0.5, y: 0.675, z: 1.28}
   safeFall: 15
   speedUp: 9

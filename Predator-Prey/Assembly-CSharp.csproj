@@ -65,7 +65,8 @@
     <Compile Include="Assets\DummyTarget.cs" />
     <Compile Include="Assets\EatPrey.cs" />
     <Compile Include="Assets\Scripts\CameraController.cs" />
-    <Compile Include="Assets\Scripts\LandAnimal.cs" />
+    <Compile Include="Assets\Scripts\ILAMove.cs" />
+    <Compile Include="Assets\Scripts\ILandAnimal.cs" />
     <Compile Include="Assets\Scripts\MarioController.cs" />
     <Compile Include="Assets\Scripts\Predator.cs" />
     <Compile Include="Assets\Scripts\PredMove.cs" />

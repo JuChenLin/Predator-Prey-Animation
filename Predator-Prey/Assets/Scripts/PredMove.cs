@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PredMove : MonoBehaviour
+public class PredMove : MonoBehaviour, ILAMove
 {
     // TESTING ONLY
     private Vector3 huntMovePos = new Vector3(-10.0f, 0.5f, 10f);
@@ -31,9 +31,9 @@ public class PredMove : MonoBehaviour
     // current moving state of the Predator
     private PredatorMove pmState;
 
-    // used to store the obstacle mask
+    // used to store the obstacle layermask
     private int obstacleMask;
-    // used to store the prey mask
+    // used to store the prey layermask
     private int preyMask;
 
     // TESTING ONLY
@@ -42,6 +42,44 @@ public class PredMove : MonoBehaviour
 
     // get speed value of the Predator
     private float currSpeed = 0.0f;
+
+    public void Accelerate(float desSpeed)
+    {
+        float maxAccel = desSpeed - currSpeed;
+
+        if (maxAccel > pred.speedUp)
+            maxAccel = pred.speedUp;
+
+         maxAccel *= Time.fixedDeltaTime;
+
+        Debug.Log("acceleration value is " + maxAccel);
+
+        rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
+    }
+
+    public void AdjSpeedForAngle(float maxSpeed, float desAngle)
+    {
+        float optSpeed = maxSpeed;
+
+        // avoid overshooting the target
+        if (desAngle > (pred.MaxTurn() / Time.fixedDeltaTime))
+        {
+            Debug.Log("desired angle is greater than max turn!");
+            optSpeed = (pred.breakForce * Time.fixedDeltaTime) / ((desAngle * Mathf.Deg2Rad) * rb.mass);
+        }
+
+        if (optSpeed > maxSpeed)
+            optSpeed = maxSpeed;
+        else if (optSpeed < 0.0f)
+            optSpeed = 0.0f;
+
+        Debug.Log("calculated optimal speed is " + optSpeed);
+
+        if (optSpeed < currSpeed)
+            Decelerate(optSpeed);
+        else
+            Accelerate(optSpeed);
+    }
 
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
@@ -59,20 +97,16 @@ public class PredMove : MonoBehaviour
     }
 
     // isHunting parameter includes Hunt and Stalk states
-    bool CheckFOV(Rigidbody other, bool isHunting)
+    public bool CheckFOV(Rigidbody other, bool isHunting)
     {
-        // Vector3 toPrey = rb.position - other.position;
-        Vector3 toPrey = other.position - pred.GetBodyPositions()[0];
+        float angleToPrey = DegAngleToTarget(other.position);
 
-        float angleToPrey = Vector3.Angle(toPrey, transform.right);
-
-        Debug.Log("angleToPrey: " + angleToPrey);
         Debug.Log("hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
         if(angleToPrey < (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)))
         {
             RaycastHit hit;
 
-            if(Physics.Raycast(pred.GetBodyPositions()[0], toPrey.normalized, out hit, tColl.radius, 1 << dummyMask))
+            if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position).normalized, out hit, tColl.radius, 1 << dummyMask))
             {     
                 if (hit.collider.attachedRigidbody == other)
                 {
@@ -89,12 +123,43 @@ public class PredMove : MonoBehaviour
         return false;
     }
 
+    public void Decelerate(float desSpeed)
+    {
+        float maxDecel = currSpeed - desSpeed;
+
+        if (maxDecel > pred.GetSpeedDown())
+            maxDecel = pred.GetSpeedDown();
+
+        maxDecel *= Time.fixedDeltaTime;
+
+        Debug.Log("deceleration value is " + maxDecel);
+
+        rb.MovePosition(rb.position + transform.right * (currSpeed + maxDecel) * Time.fixedDeltaTime);
+    }
+
+    public float DegAngleToTarget(Vector3 target)
+    {
+        // Vector3 toTarget = rb.position - target;
+        Vector3 toTarget = DirToTarget(target);
+
+        float angleToTarget = Vector3.Angle(toTarget, transform.right);
+        Debug.Log("angleToTarget: " + angleToTarget);
+
+        return angleToTarget;
+    }
+
+    public Vector3 DirToTarget(Vector3 target)
+    {
+        return target - pred.GetBodyPositions()[0];
+    }
+
     // FixedUpdate is called a number of times based upon current frame rate
     // All physics calculations and updates occur immediately after FixedUpdate
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
         currSpeed = pred.GetSpeed();
+        Debug.Log("speed is now " + currSpeed);
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
@@ -129,32 +194,34 @@ public class PredMove : MonoBehaviour
         {
             // rb.MovePosition(rb.position + transform.forward * pred.moveSpeed * Time.fixedDeltaTime);
 
-            // SPECIFIC TO COUGAR MODEL
-            rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
-
             // seeks position while attempting to keep cover
             if (!isJumping)
             {
-                // Seek(huntMovePos);
+                Seek(pred.moveSpeed, huntMovePos);
             }
         }
         else if (pmState == PredatorMove.Pursue)
         {
             Vector3 preyFuturePos;
+
+            // float maxAccel = ((currSpeed + pred.speedUp) < pred.chaseSpeed) ? pred.speedUp : (pred.chaseSpeed - currSpeed);
             
             // SPECIFIC TO COUGAR MODEL
-            rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
+            // rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
 
             // CHANGE to Rigidbody for prey
             DummyTarget dt = prey.GetComponent<DummyTarget>();
-            if(dt.maxSpeed == 0.0f)
+            if (dt.maxSpeed == 0.0f)
             {
-                preyFuturePos = prey.transform.position;
+                preyFuturePos = prey.position;
             }
             else
-                preyFuturePos = prey.transform.position + dt.currSpeed * ((prey.transform.position - rb.position) / dt.maxSpeed);
+            {
+                preyFuturePos = prey.position + dt.currSpeed * ((prey.position - rb.position) / dt.maxSpeed);
+                // preyFuturePos = prey.position + dt.currSpeed * Time.fixedDeltaTime * ((prey.position - rb.position) / dt.maxSpeed);
+            }
 
-            Seek(preyFuturePos);
+            Seek(pred.chaseSpeed, preyFuturePos);
             Debug.Log("distance is " + (prey.transform.position - rb.position).magnitude);
 
             if (!prey.gameObject.activeSelf)
@@ -180,30 +247,32 @@ public class PredMove : MonoBehaviour
         
     }
 
-    // implement behavior to seek a target position
-    public void Seek(Vector3 target)
+    public void Seek(float maxSpeed, Vector3 target)
     {
+        float angleToTarget = DegAngleToTarget(target);
+
         // if not already moving, first get a bearing
         float changeAngle = 0.0f;
 
         // calculate current velocity (m/s)
-        Vector3 curVelocity = (pred.rb.position - pred.GetPrevPosition()) / Time.fixedDeltaTime;
+        // Vector3 curVelocity = pred.GetVelocity() / Time.fixedDeltaTime;
+        Vector3 curVelocity = pred.GetVelocity().normalized;
+        
         // Debug.Log("current velocity is " + curVelocity);
 
-        // desired straight-line velocity to target
-        Vector3 desVelocity = Vector3.Normalize(target - rb.position) *
-            pred.moveSpeed;
+        // move in desired straight-line velocity to target
+        AdjSpeedForAngle(maxSpeed, angleToTarget);
 
         // check if zero velocity (not already moving)
         if (curVelocity == Vector3.zero)
         {
             Debug.Log("Velocity is zero!");
-            changeAngle = Vector3.SignedAngle(pred.transform.right, desVelocity, pred.transform.up);
+            changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target), pred.transform.up);
         }
         else
         {
             // angle change to go directly to desired target
-            changeAngle = Vector3.SignedAngle(curVelocity, desVelocity, pred.transform.up);
+            changeAngle = Vector3.SignedAngle(curVelocity, DirToTarget(target), pred.transform.up);
         }
 
         // default angle to rotate
@@ -224,6 +293,9 @@ public class PredMove : MonoBehaviour
         // Debug.Log("Angle between destination and new vectors is " + changeAngle);
         // Debug.Log("Calculated max turn is " + pred.maxTurn());
         // Debug.Log("Using angle " + useAngle);
+
+        // SPECIFIC TO COUGAR MODEL
+        // rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
 
         rb.MoveRotation(pred.rb.rotation * Quaternion.AngleAxis(useAngle, pred.transform.up));
     }
