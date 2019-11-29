@@ -54,7 +54,7 @@ public class PreyMove : MonoBehaviour, ILAMove
 
         Debug.Log("acceleration value is " + maxAccel);
 
-        rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
+        rb.MovePosition(rb.position + transform.forward * (currSpeed + maxAccel) * Time.fixedDeltaTime);
     }
 
     public void AdjSpeedForAngle(float maxSpeed, float desAngle)
@@ -89,6 +89,8 @@ public class PreyMove : MonoBehaviour, ILAMove
         anim = GetComponent<Animator>();
         tColl = GetComponent<SphereCollider>();
 
+        anim.runtimeAnimatorController = Resources.Load("Animator Controllers/ac_Prey") as RuntimeAnimatorController;
+
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         predMask = LayerMask.NameToLayer("layer_Pred");
 
@@ -102,7 +104,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         // Vector3 toPredator = rb.position - other.position;
         Vector3 toPredator = other.position - prey.GetBodyPositions()[0];
 
-        float angleToPredator = Vector3.Angle(toPredator, transform.right);
+        float angleToPredator = Vector3.Angle(toPredator, transform.forward);
 
         Debug.Log("angleToPredator: " + angleToPredator);
         Debug.Log("hunting FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
@@ -138,7 +140,7 @@ public class PreyMove : MonoBehaviour, ILAMove
 
         Debug.Log("deceleration value is " + maxDecel);
 
-        rb.MovePosition(rb.position + transform.right * (currSpeed + maxDecel) * Time.fixedDeltaTime);
+        rb.MovePosition(rb.position + transform.forward * (currSpeed + maxDecel) * Time.fixedDeltaTime);
     }
 
     public float DegAngleToTarget(Vector3 target)
@@ -146,7 +148,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         // Vector3 toTarget = rb.position - target;
         Vector3 toTarget = DirToTarget(target);
 
-        float angleToTarget = Vector3.Angle(toTarget, transform.right);
+        float angleToTarget = Vector3.Angle(toTarget, transform.forward);
         Debug.Log("angleToTarget: " + angleToTarget);
 
         return angleToTarget;
@@ -198,7 +200,7 @@ public class PreyMove : MonoBehaviour, ILAMove
             // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // SPECIFIC TO DEER MODEL
-            rb.MovePosition(rb.position + transform.right * prey.moveSpeed * Time.fixedDeltaTime);
+            rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // seeks position while attempting to keep cover
             if (!isJumping)
@@ -211,7 +213,7 @@ public class PreyMove : MonoBehaviour, ILAMove
             Vector3 predFuturePos;
             
             // SPECIFIC TO DEER MODEL
-            rb.MovePosition(rb.position + transform.right * prey.moveSpeed * Time.fixedDeltaTime);
+            rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // CHANGE to Rigidbody for prey
             DummyTarget dt = pred.GetComponent<DummyTarget>();
@@ -269,7 +271,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         if (curVelocity == Vector3.zero)
         {
             Debug.Log("Velocity is zero!");
-            changeAngle = Vector3.SignedAngle(prey.transform.right, desVelocity, prey.transform.up);
+            changeAngle = Vector3.SignedAngle(prey.transform.forward, desVelocity, prey.transform.up);
         }
         else
         {
@@ -348,7 +350,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         // Debug.Log("Using angle " + useAngle);
 
         // SPECIFIC TO COUGAR MODEL
-        // rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
+        // rb.MovePosition(rb.position + transform.forward * pred.moveSpeed * Time.fixedDeltaTime);
 
         rb.MoveRotation(prey.rb.rotation * Quaternion.AngleAxis(useAngle, pred.transform.up));
     }
