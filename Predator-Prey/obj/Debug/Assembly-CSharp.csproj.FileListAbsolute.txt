@@ -1,0 +1,2 @@
+C:\Users\artif\Documents\GitHub\Predator-Prey\Predator-Prey\obj\Debug\Assembly-CSharp.csprojAssemblyReference.cache
+C:\Users\artif\Documents\GitHub\Predator-Prey\Predator-Prey\obj\Debug\Assembly-CSharp.csproj.CoreCompileInputs.cache

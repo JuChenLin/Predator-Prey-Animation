@@ -128,7 +128,6 @@ public class Predator : MonoBehaviour, ILandAnimal
         jawPoint = rb.position + jawPointOffset;
     }
 
-
     public Vector3[] GetBodyPositions()
     {
         Vector3[] bodyPos = {viewPoint, jawPoint};

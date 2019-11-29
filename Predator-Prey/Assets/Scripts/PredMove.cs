@@ -89,6 +89,8 @@ public class PredMove : MonoBehaviour, ILAMove
         anim = GetComponent<Animator>();
         tColl = GetComponent<SphereCollider>();
 
+        anim.runtimeAnimatorController = Resources.Load("Animator Controllers/ac_Predator") as RuntimeAnimatorController;
+
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         preyMask = LayerMask.NameToLayer("layer_Prey");
 

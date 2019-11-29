@@ -7,11 +7,12 @@ public class Prey : MonoBehaviour, ILandAnimal
     public Rigidbody rb;
 
     // EXPERIMENTAL
+    [SerializeField] private Vector3 currVelocity = new Vector3();
     // get position of "forefeet" to check for sharply raised terrain
     //[SerializeField] private Vector3 foreFeet = new Vector3();
-    // // get position of jaw and jaw's offset from the Predator's position
-    // [SerializeField] private Vector3 jawPointOffset = new Vector3();
-    // [SerializeField] private Vector3 jawPoint = new Vector3();
+    // get position of jaw and jaw's offset from the Predator's position
+    [SerializeField] private Vector3 jawPointOffset = new Vector3();
+    [SerializeField] private Vector3 jawPoint = new Vector3();
     // get previous position of the Prey in world space
     [SerializeField] private Vector3 prevPosition = new Vector3();
     // length of the Ray to evaluate terrain (could place in own function?)
@@ -51,7 +52,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float pMass = 92.0f;
 
     // monocFOV is monocular field of vision, in degrees
-    public float monocFOV = 310f;
+    public float monocFOV = 250.0f;
     // normal move speed in m/s
     public float moveSpeed = 4.470389f;
 
@@ -64,44 +65,10 @@ public class Prey : MonoBehaviour, ILandAnimal
     // increased velocity increments (m/s^2), with chase speed as limit
     public float speedUp = 9.0f;
 
-    // calculate the max turning radius given current velocity
-    // returns degrees
-    public float MaxTurn()
-    {
-        if (speed == 0.0f)
-            return 180.0f;
-
-        float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
-
-        /*
-        Debug.Log("breakforce: " + breakForce);
-        Debug.Log("pMass: " + pMass);
-        Debug.Log("speed: " + speed);
-        Debug.Log("turn (rads): " + turn);
-        Debug.Log("turn (degs): " + turn * Mathf.Rad2Deg);
-        */
-
-        if ((turn * Mathf.Rad2Deg) > 180.0f)
-            return 180.0f;
-        else
-            return turn * Mathf.Rad2Deg;
-    }
-
-    public string getType()
-    {
-        return type;
-    }
-
-    public void setType()
-    {
-        // set the object's class name (Predator or Prey)
-        type = this.GetType().Name;
-    }
-
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
     {
-        setType();
+        SetTypeAnimal();
         rb = GetComponent<Rigidbody>();
         // set Transform Scale values (relative to parent) equal to object's pSize values
         transform.localScale.Set(pSize.x, pSize.y, pSize.z);
@@ -122,8 +89,8 @@ public class Prey : MonoBehaviour, ILandAnimal
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
-        // jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
-        // jawPoint = rb.position + jawPointOffset;
+        jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
+        jawPoint = rb.position + jawPointOffset;
 
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
@@ -153,19 +120,21 @@ public class Prey : MonoBehaviour, ILandAnimal
     // Do not need to multiply values by Time.deltaTime
     void FixedUpdate()
     {
-        speed = ((rb.position - prevPosition).magnitude) / Time.fixedDeltaTime;
+        currVelocity = rb.position - prevPosition;
+        speed = currVelocity.magnitude / Time.fixedDeltaTime;
         prevPosition = rb.position;
         turnRadius = MaxTurn();
         viewPoint = rb.position + viewPointOffset;
         // jawPoint = rb.position + jawPointOffset;
     }
 
-
+    ///*
     public Vector3[] GetBodyPositions()
     {
         Vector3[] bodyPos = {viewPoint, jawPoint};
         return bodyPos;
     }
+    //*/
 
     public Vector3 GetPrevPosition()
     {
@@ -177,6 +146,50 @@ public class Prey : MonoBehaviour, ILandAnimal
         return speed;
     }
 
+    public float GetSpeedDown()
+    {
+        return speedDown;
+    }
+
+    public string GetTypeAnimal()
+    {
+        return type;
+    }
+
+    public Vector3 GetVelocity()
+    {
+        return currVelocity;
+    }
+
+    // calculate the max turning radius given current velocity
+    // returns degrees
+    public float MaxTurn()
+    {
+        if (speed == 0.0f)
+            return 180.0f;
+
+        float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
+
+        /*
+        Debug.Log("breakforce: " + breakForce);
+        Debug.Log("pMass: " + pMass);
+        Debug.Log("speed: " + speed);
+        Debug.Log("turn (rads): " + turn);
+        Debug.Log("turn (degs): " + turn * Mathf.Rad2Deg);
+        */
+
+        if ((turn * Mathf.Rad2Deg) > 180.0f)
+            return 180.0f;
+        else
+            return turn * Mathf.Rad2Deg;
+    }
+
+    public void SetTypeAnimal()
+    {
+        // set the object's class name (Predator or Prey)
+        type = this.GetType().Name;
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -186,19 +199,6 @@ public class Prey : MonoBehaviour, ILandAnimal
     // Update is called once per frame
     void Update()
     {
-        /*
-        speed = ((transform.position - prevPosition).magnitude) / Time.deltaTime;
-        prevPosition = transform.position;
-        turnRadius = maxTurn();
-        viewPoint.Set(transform.position.x, transform.position.y + (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
-        foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
-        rayLength = Mathf.Pow(speed, 2.0f) / -speedDown;
-        Debug.DrawRay(viewPoint, new Vector3(0.0f, -pSize.y, rayLength) * 1000.0f, Color.blue);
-        // Debug.DrawRay(foreFeet, transform.forward * speed * Time.deltaTime, Color.red);
-        // TEST ONLY
-        Debug.DrawRay(foreFeet, transform.forward * speed, Color.red);
 
-        Debug.DrawRay(transform.position, Vector3.down * pSize.y * 0.5f);
-        */
     }
 }
