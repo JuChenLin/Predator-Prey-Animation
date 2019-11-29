@@ -259,8 +259,8 @@ public class PredMove : MonoBehaviour, ILAMove
         else if (pmState == PredatorMove.Stalk)
         {
             Vector3 preyPos;
+            float stalk = pred.stalkSpeed;
 
-            // ANYTHING WITH DT IS FOR TESTING ONLY
             preyPos = prey.position;
 
             Seek(pred.stalkSpeed, preyPos);

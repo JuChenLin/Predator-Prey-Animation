@@ -49,7 +49,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float maxStandJump = 7.672027f;
 
     // mass in kg
-    public float pMass = 92.0f;
+    public float pMass = 94.0f;
 
     // monocFOV is monocular field of vision, in degrees
     public float monocFOV = 250.0f;
@@ -58,7 +58,7 @@ public class Prey : MonoBehaviour, ILandAnimal
 
     // EXPERIMENTAL
     // scale multiples applied to model's transform
-    public Vector3 pSize = new Vector3(0.6f, 0.96f, 1.48f);
+    public Vector3 pSize = new Vector3(0.81f, 0.81f, 0.81f);
 
     // safe fall distance in meters
     public float safeFall = 15.0f;
@@ -83,13 +83,14 @@ public class Prey : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
-            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
+        viewPointOffset = (FindDeepChild(transform, "eyelid_up_L").position +
+            FindDeepChild(transform, "eyelid_up_R").position) * 0.5f - rb.position;
         viewPoint = rb.position + viewPointOffset;
+        Debug.Log("Prey's viewpoint is " + viewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
-        jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
+        jawPointOffset = FindDeepChild(transform, "mouth").position - rb.position;
         jawPoint = rb.position + jawPointOffset;
 
         // set Rigidbody mass equal to object's mass

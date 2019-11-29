@@ -58,7 +58,7 @@ public class Predator : MonoBehaviour, ILandAnimal
 
     // EXPERIMENTAL
     // scale multiples applied to model's transform
-    public Vector3 pSize = new Vector3(0.5f, 0.675f, 1.28f);
+    public Vector3 pSize = new Vector3(0.79f, 0.79f, 0.79f);
 
     // safe fall distance in meters
     public float safeFall = 15.0f;
