@@ -252,6 +252,7 @@ public class PredMove : MonoBehaviour, ILAMove
     public void Seek(float maxSpeed, Vector3 target)
     {
         float angleToTarget = DegAngleToTarget(target);
+        float turn = pred.MaxTurn();
 
         // if not already moving, first get a bearing
         float changeAngle = 0.0f;
@@ -283,12 +284,12 @@ public class PredMove : MonoBehaviour, ILAMove
         // check to see if angle exceeds max
         if (changeAngle > 0.0f)
         {
-            if (pred.MaxTurn() < changeAngle)
-                useAngle = pred.MaxTurn();
+            if (turn < changeAngle)
+                useAngle = turn;
         }
         else
         {
-            if (pred.MaxTurn() < Mathf.Abs(changeAngle))
+            if (turn < Mathf.Abs(changeAngle))
                 useAngle = -pred.MaxTurn();
         }
 
@@ -299,6 +300,8 @@ public class PredMove : MonoBehaviour, ILAMove
         // SPECIFIC TO COUGAR MODEL
         // rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
 
+        Debug.Log("max turn angle is " + turn);
+        Debug.Log("moving turn angle is " + useAngle);
         rb.MoveRotation(pred.rb.rotation * Quaternion.AngleAxis(useAngle, pred.transform.up));
     }
 
