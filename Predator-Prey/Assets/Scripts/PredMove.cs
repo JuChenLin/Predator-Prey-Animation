@@ -38,7 +38,7 @@ public class PredMove : MonoBehaviour, ILAMove
 
     // TESTING ONLY
     private int dummyMask;
-    // public Rigidbody dummy;
+    public DummyTarget dt;
 
     // get speed value of the Predator
     private float currSpeed = 0.0f;
@@ -84,6 +84,10 @@ public class PredMove : MonoBehaviour, ILAMove
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
     {
+        // TESTING ONLY WITH DUMMY TARGET
+        GameObject dgo = GameObject.FindWithTag("tag_dummy");
+        dt = dgo.GetComponent<DummyTarget>();
+
         pred = GetComponent<Predator>();
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
@@ -96,6 +100,7 @@ public class PredMove : MonoBehaviour, ILAMove
 
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
+        
     }
 
     // isHunting parameter includes Hunt and Stalk states
@@ -108,6 +113,7 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             RaycastHit hit;
 
+            // CHANGE DUMMYMASK TO PREYMASK
             if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position).normalized, out hit, tColl.radius, 1 << dummyMask))
             {     
                 if (hit.collider.attachedRigidbody == other)
@@ -123,6 +129,29 @@ public class PredMove : MonoBehaviour, ILAMove
         }
 
         return false;
+    }
+
+    public void CheckPreyEaten()
+    {
+        if (!prey.gameObject.activeSelf)
+        {
+            prey = null;
+            pmState = PredatorMove.Hunt;
+            Debug.Log("Back to hunt...");
+        }
+    }
+
+    public void CheckTrigger(Collider other, bool isHunting)
+    {
+        Rigidbody potentPrey = other.attachedRigidbody;
+
+        if (potentPrey && CheckFOV(potentPrey, isHunting))
+        {
+            // pmState = PredatorMove.Pursue;
+            pmState = PredatorMove.Stalk;
+            prey = potentPrey;
+            Debug.Log("Prey is located at " + prey.transform.position);
+        }
     }
 
     public void Decelerate(float desSpeed)
@@ -207,12 +236,11 @@ public class PredMove : MonoBehaviour, ILAMove
             Vector3 preyFuturePos;
 
             // float maxAccel = ((currSpeed + pred.speedUp) < pred.chaseSpeed) ? pred.speedUp : (pred.chaseSpeed - currSpeed);
-            
+
             // SPECIFIC TO COUGAR MODEL
             // rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
 
-            // CHANGE to Rigidbody for prey
-            DummyTarget dt = prey.GetComponent<DummyTarget>();
+            // ANYTHING WITH DT IS FOR TESTING ONLY
             if (dt.maxSpeed == 0.0f)
             {
                 preyFuturePos = prey.position;
@@ -226,11 +254,18 @@ public class PredMove : MonoBehaviour, ILAMove
             Seek(pred.chaseSpeed, preyFuturePos);
             Debug.Log("distance is " + (prey.transform.position - rb.position).magnitude);
 
-            if (!prey.gameObject.activeSelf)
-            {
-                pmState = PredatorMove.Hunt;
-                Debug.Log("Back to hunt...");
-            }
+            CheckPreyEaten();
+        }
+        else if (pmState == PredatorMove.Stalk)
+        {
+            Vector3 preyPos;
+
+            // ANYTHING WITH DT IS FOR TESTING ONLY
+            preyPos = prey.position;
+
+            Seek(pred.stalkSpeed, preyPos);
+
+            CheckPreyEaten();
         }
     }
 
@@ -246,7 +281,7 @@ public class PredMove : MonoBehaviour, ILAMove
 
     private void OnTriggerEnter(Collider other)
     {
-        
+        CheckTrigger(other, pmState == PredatorMove.Hunt);
     }
 
     public void Seek(float maxSpeed, Vector3 target)
@@ -316,6 +351,7 @@ public class PredMove : MonoBehaviour, ILAMove
         // TESTING ONLY
         pmState = PredatorMove.Hunt;
 
+        // CHANGE FROM DUMMYMASK TO PREYMASK
         // Look for existing targets only 
         Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << dummyMask);
 
@@ -323,14 +359,7 @@ public class PredMove : MonoBehaviour, ILAMove
 
         if (inRange.Length > 0 && pmState == PredatorMove.Hunt)
         {
-            Rigidbody potentPrey = inRange[0].attachedRigidbody;
-
-            if (potentPrey && CheckFOV(potentPrey, true))
-            {
-                pmState = PredatorMove.Pursue;
-                prey = potentPrey;
-                Debug.Log("Prey is located at " + prey.transform.position);
-            }
+            CheckTrigger(inRange[0], true);
         }
     }
 

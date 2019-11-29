@@ -64,6 +64,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float safeFall = 15.0f;
     // increased velocity increments (m/s^2), with chase speed as limit
     public float speedUp = 9.0f;
+    // maximum stalk speed
+    public float stalkSpeed = 1.5f;
 
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()

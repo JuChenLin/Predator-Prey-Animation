@@ -16,6 +16,8 @@ public interface ILAMove
     // and monocular FOV can be implemented
     bool CheckFOV(Rigidbody other, bool isHunting);
 
+
+
     // decelerate to the desired speed you wish to reach; will be limited by 0 speed
     void Decelerate(float desSpeed);
 
