@@ -19,8 +19,7 @@ public class EatPrey : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        // CHANGE TAG_DUMMY TO TAG_PREY
-        if (pm.prey && other.tag == "tag_dummy" && other.attachedRigidbody == pm.prey)
+        if (pm.prey && other.tag == "tag_Prey" && other.attachedRigidbody == pm.prey && !other.isTrigger)
         {
             Debug.Log("deactivation of prey");
             pm.prey.gameObject.SetActive(false);

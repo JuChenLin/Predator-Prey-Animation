@@ -85,9 +85,10 @@ public class Predator : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
-            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
-        viewPoint = rb.position + viewPointOffset;
+        //viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
+        //    FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
+        viewPoint = (FindDeepChild(transform, "b_eyelid_left_upper").position +
+            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f;
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
@@ -168,7 +169,11 @@ public class Predator : MonoBehaviour, ILandAnimal
         if (speed == 0.0f)
             return 180.0f;
 
-        float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
+        // SAVED WAY
+        //float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
+        
+        // ATTEMPTED NEW WAY; per second
+        float turn = breakForce / (pMass * speed);
 
         /*
         Debug.Log("breakforce: " + breakForce);

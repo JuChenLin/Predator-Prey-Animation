@@ -31,17 +31,15 @@ public class PreyMove : MonoBehaviour, ILAMove
     // current moving state of the Prey
     private PreyStates pmState;
 
-    // used to store the obstacle mask
+    // used to store the obstacle layermask
     private int obstacleMask;
-    // used to store the predator mask
+    // used to store the predator layermask
     private int predMask;
-
-    // TESTING ONLY
-    private int dummyMask;
-    // public Rigidbody dummy;
+    // used to store the prey layermask
+    private int preyMask;
 
     // get speed value of the Prey
-    public float currSpeed = 0.0f;
+    private float currSpeed = 0.0f;
 
     public void Accelerate(float desSpeed)
     {
@@ -50,11 +48,12 @@ public class PreyMove : MonoBehaviour, ILAMove
         if (maxAccel > prey.speedUp)
             maxAccel = prey.speedUp;
 
-        maxAccel *= Time.fixedDeltaTime;
+        // Debug.Log("Prey acceleration value is " + maxAccel);
 
-        Debug.Log("acceleration value is " + maxAccel);
+        // physical equation using acceleration (per physics frame)
+        rb.MovePosition(rb.position + transform.forward * (currSpeed + 0.5f * maxAccel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
 
-        rb.MovePosition(rb.position + transform.forward * (currSpeed + maxAccel) * Time.fixedDeltaTime);
+        // Debug.Log("Prey acceleration value is " + maxAccel);
     }
 
     public void AdjSpeedForAngle(float maxSpeed, float desAngle)
@@ -62,10 +61,10 @@ public class PreyMove : MonoBehaviour, ILAMove
         float optSpeed = maxSpeed;
 
         // avoid overshooting the target
-        if (desAngle > (prey.MaxTurn() / Time.fixedDeltaTime))
+        if (desAngle > prey.MaxTurn())
         {
-            Debug.Log("desired angle is greater than max turn!");
-            optSpeed = (prey.breakForce * Time.fixedDeltaTime) / ((desAngle * Mathf.Deg2Rad) * rb.mass);
+            // Debug.Log("Prey: desired angle is greater than max turn!");
+            optSpeed = prey.breakForce / ((desAngle * Mathf.Deg2Rad) * rb.mass);
         }
 
         if (optSpeed > maxSpeed)
@@ -73,7 +72,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         else if (optSpeed < 0.0f)
             optSpeed = 0.0f;
 
-        Debug.Log("calculated optimal speed is " + optSpeed);
+       // Debug.Log("Prey's calculated optimal speed is " + optSpeed);
 
         if (optSpeed < currSpeed)
             Decelerate(optSpeed);
@@ -93,40 +92,53 @@ public class PreyMove : MonoBehaviour, ILAMove
 
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         predMask = LayerMask.NameToLayer("layer_Pred");
+        preyMask = LayerMask.NameToLayer("layer_Prey");
 
+        /*
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
+        */
     }
 
     // isWatchful parameter includes Reck and Hide states
     public bool CheckFOV(Rigidbody other, bool isWatchful)
     {
-        // Vector3 toPredator = rb.position - other.position;
-        Vector3 toPredator = other.position - prey.GetBodyPositions()[0];
+        float angleToPredator = DegAngleToTarget(other.position);
 
-        float angleToPredator = Vector3.Angle(toPredator, transform.forward);
-
-        Debug.Log("angleToPredator: " + angleToPredator);
-        Debug.Log("hunting FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
+        // Debug.Log("angleToPredator: " + angleToPredator);
+        // Debug.Log("Prey: watching FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
         if(angleToPredator < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)))
         {
             RaycastHit hit;
 
-            if(Physics.Raycast(prey.GetBodyPositions()[0], toPredator.normalized, out hit, tColl.radius, 1 << dummyMask))
+            if(Physics.Raycast(prey.GetBodyPositions()[0], DirToTarget(other.position), out hit, tColl.radius, 1 << predMask))
             {     
                 if (hit.collider.attachedRigidbody == other)
                 {
-                    Debug.Log("returned true in FOV");
+                    // Debug.Log("Prey: returned true in FOV");
                     return true;
                 }
                 else
                 {
-                    Debug.Log("hit " + hit.rigidbody.gameObject.name);
+                    // Debug.Log("Prey: hit " + hit.rigidbody.gameObject.name);
                 }
             }
         }
 
         return false;
+    }
+
+    public void CheckTrigger(Collider other, bool isWatchful)
+    {
+        Rigidbody potentPred = other.attachedRigidbody;
+
+        if (potentPred && CheckFOV(potentPred, isWatchful))
+        {
+            // pmState = PredatorMove.Evade;
+            pmState = PreyStates.Hide;
+            pred = potentPred;
+            // Debug.Log("Predator is located at " + pred.position);
+        }
     }
 
     public void Decelerate(float desSpeed)
@@ -138,7 +150,7 @@ public class PreyMove : MonoBehaviour, ILAMove
 
         maxDecel *= Time.fixedDeltaTime;
 
-        Debug.Log("deceleration value is " + maxDecel);
+        // Debug.Log("Prey's deceleration value is " + maxDecel);
 
         rb.MovePosition(rb.position + transform.forward * (currSpeed + maxDecel) * Time.fixedDeltaTime);
     }
@@ -149,7 +161,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         Vector3 toTarget = DirToTarget(target);
 
         float angleToTarget = Vector3.Angle(toTarget, transform.forward);
-        Debug.Log("angleToTarget: " + angleToTarget);
+        // Debug.Log("Prey: angleToTarget: " + angleToTarget);
 
         return angleToTarget;
     }
@@ -165,6 +177,7 @@ public class PreyMove : MonoBehaviour, ILAMove
     void FixedUpdate()
     {
         currSpeed = prey.GetSpeed();
+        // Debug.Log("Prey's speed is now " + currSpeed);
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
@@ -191,47 +204,43 @@ public class PreyMove : MonoBehaviour, ILAMove
         }
         else if (pmState == PreyStates.Wander)
         {
-            // move mode with ?
+            // move mode with more direct routes to targets?
 
             // add logic for all other possible state transitions
         }
         else if (pmState == PreyStates.Reck)
         {
-            // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
-
-            // SPECIFIC TO DEER MODEL
-            rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
+            //rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // seeks position while attempting to keep cover
             if (!isJumping)
             {
-                //Flee(targetMovePos);
+                // Flee(prey.moveSpeed, targetMovePos);
             }
         }
         else if (pmState == PreyStates.Evade)
         {
             Vector3 predFuturePos;
-            
-            // SPECIFIC TO DEER MODEL
-            rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
-            // CHANGE to Rigidbody for prey
-            DummyTarget dt = pred.GetComponent<DummyTarget>();
-            if(dt.maxSpeed == 0.0f)
+            // float maxAccel = ((currSpeed + prey.speedUp) < prey.fleeSpeed) ? prey.speedUp : (prey.fleeSpeed - currSpeed);
+
+            // SPECIFIC TO DEER MODEL
+            // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
+
+            Predator predStats = pred.GetComponent<Predator>();
+
+            if (predStats.chaseSpeed == 0.0f)
             {
-                predFuturePos = pred.transform.position;
+                predFuturePos = pred.position;
             }
             else
-                predFuturePos = pred.transform.position + dt.currSpeed * ((pred.transform.position - rb.position) / dt.maxSpeed);
-
-            Flee(predFuturePos);
-            Debug.Log("distance is " + (pred.transform.position - rb.position).magnitude);
-
-            if (!pred.gameObject.activeSelf)
             {
-                pmState = PreyStates.Reck;
-                Debug.Log("Back to reck...");
+                predFuturePos = pred.position + predStats.GetSpeed() * ((pred.position - rb.position) / predStats.chaseSpeed);
+                // predFuturePos = pred.position + predStats.GetSpeed() * Time.fixedDeltaTime * ((pred.position - rb.position) / predStats.chaseSpeed);
             }
+
+            Flee(prey.fleeSpeed, predFuturePos);
+            // Debug.Log("distance to Predator is " + (pred.position - rb.position).magnitude);
         }
     }
 
@@ -247,11 +256,11 @@ public class PreyMove : MonoBehaviour, ILAMove
 
     private void OnTriggerEnter(Collider other)
     {
-
+        CheckTrigger(other, pmState == PreyStates.Reck);
     }
 
     // implement behavior to flee from a target position
-    public void Flee(Vector3 target)
+    public void Flee(float maxSpeed, Vector3 target)
     {
         // SEE SEEK BELOW, AS IT HAS BEEN MODIFIED
         // SEEK CAN BE USED FOR FLEE, JUST A DIFFERENT TARGET, AS PURSUE STATE DOES
@@ -305,6 +314,7 @@ public class PreyMove : MonoBehaviour, ILAMove
     public void Seek(float maxSpeed, Vector3 target)
     {
         float angleToTarget = DegAngleToTarget(target);
+        float turn = prey.MaxTurn();
 
         // if not already moving, first get a bearing
         float changeAngle = 0.0f;
@@ -321,7 +331,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         // check if zero velocity (not already moving)
         if (curVelocity == Vector3.zero)
         {
-            Debug.Log("Velocity is zero!");
+            Debug.Log("Pred: Velocity is zero!");
             changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target), pred.transform.up);
         }
         else
@@ -336,23 +346,26 @@ public class PreyMove : MonoBehaviour, ILAMove
         // check to see if angle exceeds max
         if (changeAngle > 0.0f)
         {
-            if (prey.MaxTurn() < changeAngle)
-                useAngle = prey.MaxTurn();
+            if (turn < changeAngle)
+                useAngle = turn;
         }
         else
         {
-            if (prey.MaxTurn() < Mathf.Abs(changeAngle))
-                useAngle = -prey.MaxTurn();
+            if (turn < Mathf.Abs(changeAngle))
+                useAngle = -turn;
         }
+
+        useAngle *= Time.fixedDeltaTime;
 
         // Debug.Log("Angle between destination and new vectors is " + changeAngle);
         // Debug.Log("Calculated max turn is " + pred.maxTurn());
         // Debug.Log("Using angle " + useAngle);
 
-        // SPECIFIC TO COUGAR MODEL
-        // rb.MovePosition(rb.position + transform.forward * pred.moveSpeed * Time.fixedDeltaTime);
+        // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
-        rb.MoveRotation(prey.rb.rotation * Quaternion.AngleAxis(useAngle, pred.transform.up));
+        // Debug.Log("Prey's max turn angle is " + turn);
+        // Debug.Log("Prey's moving turn angle is " + useAngle);
+        rb.MoveRotation(prey.rb.rotation * Quaternion.AngleAxis(useAngle, prey.transform.up));
     }
 
     // Start is called before the first frame update
@@ -363,24 +376,17 @@ public class PreyMove : MonoBehaviour, ILAMove
         // Set initial state to an idle Prey
         // pmState = PreyStates.Idle;
 
-        //TESTING ONLY
+        // TESTING ONLY
         pmState = PreyStates.Reck;
 
         // Look for existing targets only 
-        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << dummyMask);
+        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << predMask);
 
-        Debug.Log("inRange length is " + inRange.Length);
+        // Debug.Log("Prey: inRange length is " + inRange.Length);
 
         if (inRange.Length > 0 && pmState == PreyStates.Reck)
         {
-            Rigidbody potentPredator = inRange[0].attachedRigidbody;
-
-            if (potentPredator && CheckFOV(potentPredator, true))
-            {
-                pmState = PreyStates.Evade;
-                pred = potentPredator;
-                Debug.Log("Predator is located at " + pred.transform.position);
-            }
+            CheckTrigger(inRange[0], true);
         }
     }
 

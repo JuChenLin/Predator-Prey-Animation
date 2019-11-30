@@ -5,11 +5,11 @@ using UnityEngine;
 public class PredMove : MonoBehaviour, ILAMove
 {
     // TESTING ONLY
-    private Vector3 huntMovePos = new Vector3(-10.0f, 0.5f, 10f);
+    private Vector3 targetMovePos = new Vector3(-10.0f, 0.5f, 10f);
 
     // Enumerate the Predator movement states
     // *** need to determine how to handle jumps ***
-    public enum PredatorMove
+    public enum PredStates
     {
         Rest,
         Idle,
@@ -29,16 +29,14 @@ public class PredMove : MonoBehaviour, ILAMove
 
     private bool isJumping = false;
     // current moving state of the Predator
-    private PredatorMove pmState;
+    private PredStates pmState;
 
     // used to store the obstacle layermask
     private int obstacleMask;
+    // used to store the predator layermask
+    private int predMask;
     // used to store the prey layermask
     private int preyMask;
-
-    // TESTING ONLY
-    private int dummyMask;
-    public DummyTarget dt;
 
     // get speed value of the Predator
     private float currSpeed = 0.0f;
@@ -50,11 +48,10 @@ public class PredMove : MonoBehaviour, ILAMove
         if (maxAccel > pred.speedUp)
             maxAccel = pred.speedUp;
 
-         maxAccel *= Time.fixedDeltaTime;
+        // Debug.Log("Predator acceleration value is " + maxAccel);
 
-        Debug.Log("acceleration value is " + maxAccel);
-
-        rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
+        // physical equation using acceleration (per physics frame)
+        rb.MovePosition(rb.position + transform.right * (currSpeed + 0.5f * maxAccel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
     }
 
     public void AdjSpeedForAngle(float maxSpeed, float desAngle)
@@ -62,10 +59,10 @@ public class PredMove : MonoBehaviour, ILAMove
         float optSpeed = maxSpeed;
 
         // avoid overshooting the target
-        if (desAngle > (pred.MaxTurn() / Time.fixedDeltaTime))
+        if (desAngle > pred.MaxTurn())
         {
-            Debug.Log("desired angle is greater than max turn!");
-            optSpeed = (pred.breakForce * Time.fixedDeltaTime) / ((desAngle * Mathf.Deg2Rad) * rb.mass);
+            // Debug.Log("Predator: desired angle is greater than max turn!");
+            optSpeed = pred.breakForce / (desAngle * Mathf.Deg2Rad * rb.mass);
         }
 
         if (optSpeed > maxSpeed)
@@ -73,7 +70,7 @@ public class PredMove : MonoBehaviour, ILAMove
         else if (optSpeed < 0.0f)
             optSpeed = 0.0f;
 
-        Debug.Log("calculated optimal speed is " + optSpeed);
+        // Debug.Log("Predator's calculated optimal speed is " + optSpeed);
 
         if (optSpeed < currSpeed)
             Decelerate(optSpeed);
@@ -84,10 +81,6 @@ public class PredMove : MonoBehaviour, ILAMove
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
     {
-        // TESTING ONLY WITH DUMMY TARGET
-        GameObject dgo = GameObject.FindWithTag("tag_dummy");
-        dt = dgo.GetComponent<DummyTarget>();
-
         pred = GetComponent<Predator>();
         rb = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
@@ -98,9 +91,10 @@ public class PredMove : MonoBehaviour, ILAMove
         obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
         preyMask = LayerMask.NameToLayer("layer_Prey");
 
+        /*
         // TESTING ONLY
         dummyMask = LayerMask.NameToLayer("layer_Dummy Target");
-        
+        */
     }
 
     // isHunting parameter includes Hunt and Stalk states
@@ -108,22 +102,22 @@ public class PredMove : MonoBehaviour, ILAMove
     {
         float angleToPrey = DegAngleToTarget(other.position);
 
-        Debug.Log("hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
+        // Debug.Log("angleToPrey: " + angleToPrey);
+        // Debug.Log("Predator: hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
         if(angleToPrey < (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)))
         {
             RaycastHit hit;
 
-            // CHANGE DUMMYMASK TO PREYMASK
-            if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position).normalized, out hit, tColl.radius, 1 << dummyMask))
+            if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position).normalized, out hit, tColl.radius, 1 << preyMask))
             {     
                 if (hit.collider.attachedRigidbody == other)
                 {
-                    Debug.Log("returned true in FOV");
+                    Debug.Log("Predator: returned true in FOV");
                     return true;
                 }
                 else
                 {
-                    Debug.Log("hit " + hit.rigidbody.gameObject.name);
+                    Debug.Log("Predator: hit " + hit.rigidbody.gameObject.name);
                 }
             }
         }
@@ -136,7 +130,8 @@ public class PredMove : MonoBehaviour, ILAMove
         if (!prey.gameObject.activeSelf)
         {
             prey = null;
-            pmState = PredatorMove.Hunt;
+            pmState = PredStates.Hunt;
+            anim.SetBool("isStalking", false);
             Debug.Log("Back to hunt...");
         }
     }
@@ -147,10 +142,10 @@ public class PredMove : MonoBehaviour, ILAMove
 
         if (potentPrey && CheckFOV(potentPrey, isHunting))
         {
-            // pmState = PredatorMove.Pursue;
-            pmState = PredatorMove.Stalk;
+            // pmState = PredStates.Pursue;
+            pmState = PredStates.Stalk;
             prey = potentPrey;
-            Debug.Log("Prey is located at " + prey.transform.position);
+            Debug.Log("Prey is located at " + prey.position);
         }
     }
 
@@ -161,11 +156,10 @@ public class PredMove : MonoBehaviour, ILAMove
         if (maxDecel > pred.GetSpeedDown())
             maxDecel = pred.GetSpeedDown();
 
-        maxDecel *= Time.fixedDeltaTime;
+        // Debug.Log("Predator's deceleration value is " + maxDecel);
 
-        Debug.Log("deceleration value is " + maxDecel);
-
-        rb.MovePosition(rb.position + transform.right * (currSpeed + maxDecel) * Time.fixedDeltaTime);
+        // physical equation using deceleration (per physics frame)
+        rb.MovePosition(rb.position + transform.right * (currSpeed + 0.5f * maxDecel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
     }
 
     public float DegAngleToTarget(Vector3 target)
@@ -174,7 +168,7 @@ public class PredMove : MonoBehaviour, ILAMove
         Vector3 toTarget = DirToTarget(target);
 
         float angleToTarget = Vector3.Angle(toTarget, transform.right);
-        Debug.Log("angleToTarget: " + angleToTarget);
+        Debug.Log("Predator: angleToTarget: " + angleToTarget);
 
         return angleToTarget;
     }
@@ -190,7 +184,7 @@ public class PredMove : MonoBehaviour, ILAMove
     void FixedUpdate()
     {
         currSpeed = pred.GetSpeed();
-        Debug.Log("speed is now " + currSpeed);
+        Debug.Log("Predator's speed is now " + currSpeed);
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
@@ -203,35 +197,35 @@ public class PredMove : MonoBehaviour, ILAMove
             Jump(new Vector3(0.0f, Mathf.Sin(45.0f * Mathf.Deg2Rad), Mathf.Cos(45.0f * Mathf.Deg2Rad)));
         } */
 
-        if (pmState == PredatorMove.Rest)
+        if (pmState == PredStates.Rest)
         {
             // recover energy
 
             // add logic for all other possible state transitions
         }
-        else if (pmState == PredatorMove.Idle)
+        else if (pmState == PredStates.Idle)
         {
             // default start mode; recovers energy with alertness triggers?
 
             // add logic for all other possible state transitions
         }
-        else if (pmState == PredatorMove.Wander)
+        else if (pmState == PredStates.Wander)
         {
             // move mode with more direct routes to targets?
 
             // add logic for all other possible state transitions
         }
-        else if (pmState == PredatorMove.Hunt)
+        else if (pmState == PredStates.Hunt)
         {
-            // rb.MovePosition(rb.position + transform.forward * pred.moveSpeed * Time.fixedDeltaTime);
+            // rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
 
             // seeks position while attempting to keep cover
             if (!isJumping)
             {
-                Seek(pred.moveSpeed, huntMovePos);
+                Seek(pred.moveSpeed, targetMovePos);
             }
         }
-        else if (pmState == PredatorMove.Pursue)
+        else if (pmState == PredStates.Pursue)
         {
             Vector3 preyFuturePos;
 
@@ -240,25 +234,29 @@ public class PredMove : MonoBehaviour, ILAMove
             // SPECIFIC TO COUGAR MODEL
             // rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
 
-            // ANYTHING WITH DT IS FOR TESTING ONLY
-            if (dt.maxSpeed == 0.0f)
+            Prey preyStats = prey.GetComponent<Prey>();
+
+            if (preyStats.fleeSpeed == 0.0f)
             {
                 preyFuturePos = prey.position;
             }
             else
             {
-                preyFuturePos = prey.position + dt.currSpeed * ((prey.position - rb.position) / dt.maxSpeed);
-                // preyFuturePos = prey.position + dt.currSpeed * Time.fixedDeltaTime * ((prey.position - rb.position) / dt.maxSpeed);
+                preyFuturePos = prey.position + preyStats.GetSpeed() * ((prey.position - rb.position) / preyStats.fleeSpeed);
+                // preyFuturePos = prey.position + preyStats.GetSpeed() * Time.fixedDeltaTime * ((prey.position - rb.position) / preyStats.fleeSpeed);
             }
 
             Seek(pred.chaseSpeed, preyFuturePos);
-            Debug.Log("distance is " + (prey.transform.position - rb.position).magnitude);
+            Debug.Log("distance to Prey is " + (prey.position - rb.position).magnitude);
 
             CheckPreyEaten();
         }
-        else if (pmState == PredatorMove.Stalk)
+        else if (pmState == PredStates.Stalk)
         {
             Vector3 preyPos;
+
+            anim.SetBool("isStalking", true);
+
             float stalk = pred.stalkSpeed;
 
             preyPos = prey.position;
@@ -276,12 +274,14 @@ public class PredMove : MonoBehaviour, ILAMove
         anim.SetBool("isJumping", true);
 
         pred.rb.velocity = (normalVec * pred.maxStandJump);
+
+        // ACTUALLY DO THIS WHEN KNOW TRANSITIONED TO ANOTHER STATE
         anim.SetBool("isJumping", false);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        CheckTrigger(other, pmState == PredatorMove.Hunt);
+        CheckTrigger(other, pmState == PredStates.Hunt);
     }
 
     public void Seek(float maxSpeed, Vector3 target)
@@ -311,6 +311,7 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             // angle change to go directly to desired target
             changeAngle = Vector3.SignedAngle(curVelocity, DirToTarget(target), pred.transform.up);
+            // changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target), pred.transform.up);
         }
 
         // default angle to rotate
@@ -325,8 +326,10 @@ public class PredMove : MonoBehaviour, ILAMove
         else
         {
             if (turn < Mathf.Abs(changeAngle))
-                useAngle = -pred.MaxTurn();
+                useAngle = -turn;
         }
+
+        useAngle *= Time.fixedDeltaTime;
 
         // Debug.Log("Angle between destination and new vectors is " + changeAngle);
         // Debug.Log("Calculated max turn is " + pred.maxTurn());
@@ -335,8 +338,8 @@ public class PredMove : MonoBehaviour, ILAMove
         // SPECIFIC TO COUGAR MODEL
         // rb.MovePosition(rb.position + transform.right * pred.moveSpeed * Time.fixedDeltaTime);
 
-        Debug.Log("max turn angle is " + turn);
-        Debug.Log("moving turn angle is " + useAngle);
+        Debug.Log("Predator's max turn angle is " + turn);
+        Debug.Log("Predator's moving turn angle is " + useAngle);
         rb.MoveRotation(pred.rb.rotation * Quaternion.AngleAxis(useAngle, pred.transform.up));
     }
 
@@ -346,18 +349,17 @@ public class PredMove : MonoBehaviour, ILAMove
         tColl.center = pred.GetBodyPositions()[0];
         tColl.radius = pred.depthPerception;
         // Set initial state to an idle Predator
-        //pmState = PredatorMove.Idle;
+        // pmState = PredStates.Idle;
 
         // TESTING ONLY
-        pmState = PredatorMove.Hunt;
+        pmState = PredStates.Hunt;
 
-        // CHANGE FROM DUMMYMASK TO PREYMASK
         // Look for existing targets only 
-        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << dummyMask);
+        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << preyMask);
 
-        Debug.Log("inRange length is " + inRange.Length);
+        Debug.Log("Predator: inRange length is " + inRange.Length);
 
-        if (inRange.Length > 0 && pmState == PredatorMove.Hunt)
+        if (inRange.Length > 0 && pmState == PredStates.Hunt)
         {
             CheckTrigger(inRange[0], true);
         }

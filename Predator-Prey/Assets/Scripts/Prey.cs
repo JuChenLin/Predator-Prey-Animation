@@ -38,7 +38,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float breakForce = 900.0f;
 
     // maximum run speed in m/s
-    public float chaseSpeed = 20.0f;
+    public float fleeSpeed = 20.0f;
     // the maximum optimum distance of vision
     public float depthPerception = 25.0f;
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
@@ -83,9 +83,11 @@ public class Prey : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position +
-            FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
-        viewPoint = rb.position + viewPointOffset;
+        // viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position +
+        //    FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
+        //viewPoint = (FindDeepChild(transform, "eyelid_up.L").position +
+        //    FindDeepChild(transform, "eyelid_up.R").position) * 0.5f;
+        viewPoint = Vector3.zero;
         Debug.Log("Prey's viewpoint is " + viewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
