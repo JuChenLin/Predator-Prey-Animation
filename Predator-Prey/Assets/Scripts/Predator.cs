@@ -43,6 +43,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float depthPerception = 25.0f;
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
+    // maximum time will continue looking for a lost prey (using last known location/velocity) : EXPERIMENT
+    public float lostTimeLimit = 15.0f;
 
     // EXPERIMENTAL
     // max initial velocity (m/s) from a standing jump
@@ -64,6 +66,10 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float safeFall = 15.0f;
     // increased velocity increments (m/s^2), with chase speed as limit
     public float speedUp = 9.0f;
+    
+    // time limit to a sprint : EXPERIMENT
+    public float sprintTimeLimit = 20.0f;
+
     // maximum stalk speed
     public float stalkSpeed = 1.5f;
 
@@ -85,15 +91,14 @@ public class Predator : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        //viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
-        //    FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
-        viewPoint = (FindDeepChild(transform, "b_eyelid_left_upper").position +
-            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f;
+        viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
+            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
+        viewPoint = rb.position + viewPointOffset;
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
-        jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
-        jawPoint = rb.position + jawPointOffset;
+        // jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
+        jawPoint = FindDeepChild(transform, "b_Jaw").position;
 
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
@@ -169,10 +174,6 @@ public class Predator : MonoBehaviour, ILandAnimal
         if (speed == 0.0f)
             return 180.0f;
 
-        // SAVED WAY
-        //float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
-        
-        // ATTEMPTED NEW WAY; per second
         float turn = breakForce / (pMass * speed);
 
         /*

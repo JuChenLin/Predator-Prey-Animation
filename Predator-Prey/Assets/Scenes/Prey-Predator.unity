@@ -334,6 +334,7 @@ MonoBehaviour:
   chaseSpeed: 22
   depthPerception: 25
   energy: 0
+  lostTimeLimit: 15
   maxStandJump: 7.672027
   pMass: 65
   monocFOV: 78.5
@@ -341,6 +342,7 @@ MonoBehaviour:
   pSize: {x: 0.5, y: 0.675, z: 1.28}
   safeFall: 15
   speedUp: 9
+  sprintTimeLimit: 20
   stalkSpeed: 1.5
 --- !u!54 &47478490
 Rigidbody:
@@ -372,8 +374,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   anim: {fileID: 0}
   pred: {fileID: 0}
-  rb: {fileID: 0}
   prey: {fileID: 0}
+  rb: {fileID: 0}
   tColl: {fileID: 0}
 --- !u!1001 &250623933
 PrefabInstance:
@@ -451,6 +453,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Interpolate
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7881791206105758630, guid: 9c4760303b34b5943876a72eae5529ed,
+        type: 3}
+      propertyPath: moveSpeed
+      value: 4.470389
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9c4760303b34b5943876a72eae5529ed, type: 3}
@@ -1573,7 +1580,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74010d5c9cdca5943b18720d0ae1efd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  velocity: 1
+  velocity: 15
   turnSpeed: 10
   heightPadding: 0.05
   ground:

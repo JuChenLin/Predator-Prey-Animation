@@ -43,6 +43,8 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float depthPerception = 25.0f;
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
+    // maximum time will continue evading a lost predator (using last known location/velocity) : EXPERIMENT
+    public float lostTimeLimit = 15.0f;
 
     // EXPERIMENTAL
     // max initial velocity (m/s) from a standing jump
@@ -65,6 +67,9 @@ public class Prey : MonoBehaviour, ILandAnimal
     // increased velocity increments (m/s^2), with chase speed as limit
     public float speedUp = 9.0f;
 
+    // time limit to a sprint : EXPERIMENT
+    public float sprintTimeLimit = 20.0f;
+
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
     {
@@ -83,16 +88,16 @@ public class Prey : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        // viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position +
-        //    FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
-        //viewPoint = (FindDeepChild(transform, "eyelid_up.L").position +
-        //    FindDeepChild(transform, "eyelid_up.R").position) * 0.5f;
-        viewPoint = Vector3.zero;
+        // viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position + 
+        // FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
+        viewPointOffset = new Vector3(0.0f, 1.5f, 1.1f);
+        viewPoint = rb.position + viewPointOffset;
         Debug.Log("Prey's viewpoint is " + viewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
-        jawPointOffset = FindDeepChild(transform, "mouth").position - rb.position;
+        // jawPointOffset = FindDeepChild(transform, "mouth").position - rb.position;
+        jawPointOffset = new Vector3(0.0f, 1.36f, 1.27f);
         jawPoint = rb.position + jawPointOffset;
 
         // set Rigidbody mass equal to object's mass
@@ -128,7 +133,7 @@ public class Prey : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
         turnRadius = MaxTurn();
         viewPoint = rb.position + viewPointOffset;
-        // jawPoint = rb.position + jawPointOffset;
+        jawPoint = rb.position + jawPointOffset;
     }
 
     ///*
@@ -171,7 +176,7 @@ public class Prey : MonoBehaviour, ILandAnimal
         if (speed == 0.0f)
             return 180.0f;
 
-        float turn = (breakForce * Time.fixedDeltaTime) / (pMass * speed);
+        float turn = breakForce / (pMass * speed);
 
         /*
         Debug.Log("breakforce: " + breakForce);

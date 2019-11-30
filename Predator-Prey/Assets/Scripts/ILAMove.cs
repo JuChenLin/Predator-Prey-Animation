@@ -21,13 +21,13 @@ public interface ILAMove
     // decelerate to the desired speed you wish to reach; will be limited by 0 speed
     void Decelerate(float desSpeed);
 
-    // angle in degrees to your target, based upon your facing direction
+    // angle in degrees to your target, based upon your facing direction from the provided position
     // could use eyes of the animal as the source/view point (target would be the destination point) 
-    float DegAngleToTarget(Vector3 target);
+    float DegAngleToTarget(Vector3 target, Vector3 startPos);
 
-    // the vector direction to your target; could use eyes of the animal as the
+    // the vector direction to your target from the provided position; could use eyes of the animal as the
     // source/view point (target would be the destination point)
-    Vector3 DirToTarget(Vector3 target);
+    Vector3 DirToTarget(Vector3 target, Vector3 startPos);
 
     // implement behavior to seek a target position
     // provide the maximum speed you are allowed, as well as the desired target position

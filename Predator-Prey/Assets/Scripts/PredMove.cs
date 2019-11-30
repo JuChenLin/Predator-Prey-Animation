@@ -21,13 +21,25 @@ public class PredMove : MonoBehaviour, ILAMove
 
     public Animator anim;
     public Predator pred;
-    public Rigidbody rb;
     // used for target prey
     public Rigidbody prey;
+    public Rigidbody rb;
     // used for the sight trigger collider
     public SphereCollider tColl;
 
+    // get speed value of the Predator
+    private float currSpeed = 0.0f;
     private bool isJumping = false;
+
+    // the last known location and velocity of stalked, chased, or lost prey
+    private Vector3 lastPreyLocation;
+    private Vector3 lastPreyVelocity;
+
+    // time since prey was lost
+    private float lostPreyTime = 0.0f;
+    // time sprinting
+    private float sprintTime;
+
     // current moving state of the Predator
     private PredStates pmState;
 
@@ -38,9 +50,6 @@ public class PredMove : MonoBehaviour, ILAMove
     // used to store the prey layermask
     private int preyMask;
 
-    // get speed value of the Predator
-    private float currSpeed = 0.0f;
-
     public void Accelerate(float desSpeed)
     {
         float maxAccel = desSpeed - currSpeed;
@@ -48,7 +57,7 @@ public class PredMove : MonoBehaviour, ILAMove
         if (maxAccel > pred.speedUp)
             maxAccel = pred.speedUp;
 
-        // Debug.Log("Predator acceleration value is " + maxAccel);
+        Debug.Log("Predator acceleration value is " + maxAccel);
 
         // physical equation using acceleration (per physics frame)
         rb.MovePosition(rb.position + transform.right * (currSpeed + 0.5f * maxAccel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
@@ -61,7 +70,7 @@ public class PredMove : MonoBehaviour, ILAMove
         // avoid overshooting the target
         if (desAngle > pred.MaxTurn())
         {
-            // Debug.Log("Predator: desired angle is greater than max turn!");
+            Debug.Log("Predator: desired angle is greater than max turn!");
             optSpeed = pred.breakForce / (desAngle * Mathf.Deg2Rad * rb.mass);
         }
 
@@ -70,7 +79,7 @@ public class PredMove : MonoBehaviour, ILAMove
         else if (optSpeed < 0.0f)
             optSpeed = 0.0f;
 
-        // Debug.Log("Predator's calculated optimal speed is " + optSpeed);
+        Debug.Log("Predator's calculated optimal speed is " + optSpeed);
 
         if (optSpeed < currSpeed)
             Decelerate(optSpeed);
@@ -100,7 +109,7 @@ public class PredMove : MonoBehaviour, ILAMove
     // isHunting parameter includes Hunt and Stalk states
     public bool CheckFOV(Rigidbody other, bool isHunting)
     {
-        float angleToPrey = DegAngleToTarget(other.position);
+        float angleToPrey = DegAngleToTarget(other.position, pred.GetBodyPositions()[0]);
 
         // Debug.Log("angleToPrey: " + angleToPrey);
         // Debug.Log("Predator: hunting FOV limit to each side: " + (pred.binocFOV * 0.5f + (isHunting ? pred.monocFOV : 0.0f)));
@@ -108,7 +117,7 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             RaycastHit hit;
 
-            if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position).normalized, out hit, tColl.radius, 1 << preyMask))
+            if(Physics.Raycast(pred.GetBodyPositions()[0], DirToTarget(other.position, pred.GetBodyPositions()[0]).normalized, out hit, tColl.radius, 1 << preyMask))
             {     
                 if (hit.collider.attachedRigidbody == other)
                 {
@@ -142,10 +151,11 @@ public class PredMove : MonoBehaviour, ILAMove
 
         if (potentPrey && CheckFOV(potentPrey, isHunting))
         {
-            // pmState = PredStates.Pursue;
-            pmState = PredStates.Stalk;
+            pmState = PredStates.Pursue;
+            //pmState = PredStates.Stalk;
             prey = potentPrey;
-            Debug.Log("Prey is located at " + prey.position);
+            lastPreyLocation = prey.position;
+            Debug.Log("Prey is located at " + lastPreyLocation);
         }
     }
 
@@ -156,16 +166,16 @@ public class PredMove : MonoBehaviour, ILAMove
         if (maxDecel > pred.GetSpeedDown())
             maxDecel = pred.GetSpeedDown();
 
-        // Debug.Log("Predator's deceleration value is " + maxDecel);
+        Debug.Log("Predator's deceleration value is " + maxDecel);
 
         // physical equation using deceleration (per physics frame)
         rb.MovePosition(rb.position + transform.right * (currSpeed + 0.5f * maxDecel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
     }
 
-    public float DegAngleToTarget(Vector3 target)
+    public float DegAngleToTarget(Vector3 target, Vector3 startPos)
     {
         // Vector3 toTarget = rb.position - target;
-        Vector3 toTarget = DirToTarget(target);
+        Vector3 toTarget = DirToTarget(target, startPos);
 
         float angleToTarget = Vector3.Angle(toTarget, transform.right);
         Debug.Log("Predator: angleToTarget: " + angleToTarget);
@@ -173,9 +183,9 @@ public class PredMove : MonoBehaviour, ILAMove
         return angleToTarget;
     }
 
-    public Vector3 DirToTarget(Vector3 target)
+    public Vector3 DirToTarget(Vector3 target, Vector3 startPos)
     {
-        return target - pred.GetBodyPositions()[0];
+        return target - startPos;
     }
 
     // FixedUpdate is called a number of times based upon current frame rate
@@ -229,40 +239,31 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             Vector3 preyFuturePos;
 
-            // float maxAccel = ((currSpeed + pred.speedUp) < pred.chaseSpeed) ? pred.speedUp : (pred.chaseSpeed - currSpeed);
-
-            // SPECIFIC TO COUGAR MODEL
-            // rb.MovePosition(rb.position + transform.right * (currSpeed + maxAccel) * Time.fixedDeltaTime);
-
             Prey preyStats = prey.GetComponent<Prey>();
 
-            if (preyStats.fleeSpeed == 0.0f)
+            if (preyStats.fleeSpeed == 0.0f || preyStats.GetSpeed() == 0.0f)
             {
                 preyFuturePos = prey.position;
             }
             else
             {
-                preyFuturePos = prey.position + preyStats.GetSpeed() * ((prey.position - rb.position) / preyStats.fleeSpeed);
-                // preyFuturePos = prey.position + preyStats.GetSpeed() * Time.fixedDeltaTime * ((prey.position - rb.position) / preyStats.fleeSpeed);
+                // preyFuturePos = prey.position + preyStats.GetSpeed() * (DirToTarget(prey.position, rb.position) / preyStats.fleeSpeed);
+                preyFuturePos = prey.position + preyStats.GetVelocity() * Time.fixedDeltaTime;
             }
 
             Seek(pred.chaseSpeed, preyFuturePos);
-            Debug.Log("distance to Prey is " + (prey.position - rb.position).magnitude);
+            Debug.Log("distance to Prey is " + (DirToTarget(prey.position, rb.position)).magnitude);
 
             CheckPreyEaten();
         }
         else if (pmState == PredStates.Stalk)
         {
             Vector3 preyPos;
-
-            anim.SetBool("isStalking", true);
-
             float stalk = pred.stalkSpeed;
 
+            anim.SetBool("isStalking", true);
             preyPos = prey.position;
-
             Seek(pred.stalkSpeed, preyPos);
-
             CheckPreyEaten();
         }
     }
@@ -284,33 +285,40 @@ public class PredMove : MonoBehaviour, ILAMove
         CheckTrigger(other, pmState == PredStates.Hunt);
     }
 
+    private void OnTriggerExit(Collider other)
+    {
+        
+    }
+
     public void Seek(float maxSpeed, Vector3 target)
     {
-        float angleToTarget = DegAngleToTarget(target);
         float turn = pred.MaxTurn();
 
         // if not already moving, first get a bearing
         float changeAngle = 0.0f;
 
         // calculate current velocity (m/s)
-        // Vector3 curVelocity = pred.GetVelocity() / Time.fixedDeltaTime;
-        Vector3 curVelocity = pred.GetVelocity().normalized;
-        
+        Vector3 currVelocity = pred.GetVelocity().normalized;
+        // anticipated future position based upon current velocity
+        Vector3 futurePos = rb.position + currVelocity * currSpeed;
+
+        float futureAngleToTarget = DegAngleToTarget(target, futurePos);
+
         // Debug.Log("current velocity is " + curVelocity);
 
         // move in desired straight-line velocity to target
-        AdjSpeedForAngle(maxSpeed, angleToTarget);
+        AdjSpeedForAngle(maxSpeed, futureAngleToTarget);
 
         // check if zero velocity (not already moving)
-        if (curVelocity == Vector3.zero)
+        if (currVelocity == Vector3.zero)
         {
             Debug.Log("Velocity is zero!");
-            changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target), pred.transform.up);
+            changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target, rb.position), pred.transform.up);
         }
         else
         {
             // angle change to go directly to desired target
-            changeAngle = Vector3.SignedAngle(curVelocity, DirToTarget(target), pred.transform.up);
+            changeAngle = Vector3.SignedAngle(currVelocity, DirToTarget(target, futurePos), pred.transform.up);
             // changeAngle = Vector3.SignedAngle(pred.transform.right, DirToTarget(target), pred.transform.up);
         }
 
