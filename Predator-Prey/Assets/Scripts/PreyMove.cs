@@ -5,7 +5,7 @@ using UnityEngine;
 public class PreyMove : MonoBehaviour, ILAMove
 {
     // TESTING ONLY
-    private Vector3 targetMovePos = new Vector3(-10.0f, 0.5f, 10f);
+    private Vector3 targetMovePos = new Vector3(10.0f, 0.5f, 10f);
 
     // Enumerate the Prey movement states
     // *** need to determine how to handle jumps ***
@@ -47,6 +47,9 @@ public class PreyMove : MonoBehaviour, ILAMove
     private float restTime = 0.0f;
     // time sprinting
     private float sprintTime = 0.0f;
+
+    // initial slow distance when in Wander mode; EXPERIMENTAL
+    private float slowDist;
 
     // current moving state of the Prey
     private PreyStates pmState;
@@ -98,16 +101,14 @@ public class PreyMove : MonoBehaviour, ILAMove
         return gotPred;
     }
 
+    // this method assumes pred Rigidbody has been checked!
     public bool addToUnseen(Rigidbody other)
     {
-        Predator predStats = prey.GetComponent<Predator>();
         bool lost = false;
-
-        lastPredLocation = pred.position;
-        lastPredVelocity = predStats.GetVelocity();
 
         if (pred == other)
         {
+            UpdatePredVectors();
             pred = null;
             lost = true;
         }
@@ -217,8 +218,6 @@ public class PreyMove : MonoBehaviour, ILAMove
         if (lostPredTime > prey.lostTimeLimit)
         {
             ResetLost();
-            if (pmState != PreyStates.Rest)
-                pmState = PreyStates.Wander;
             return true;
         }
         return false;
@@ -265,8 +264,8 @@ public class PreyMove : MonoBehaviour, ILAMove
                 // take action against the seen predator
                 // pmState = PredatorMove.Evade;
                 pmState = PreyStates.Hide;
-                lastPredLocation = pred.position;
-                // Debug.Log("Predator is located at " + lastPredLocation);
+
+                UpdatePredVectors();
             }
         }
     }
@@ -307,7 +306,11 @@ public class PreyMove : MonoBehaviour, ILAMove
     void FixedUpdate()
     {
         if (CheckLostTime() && pmState != PreyStates.Rest)
+        {
+            // GET NEW TARGET
+            slowDist = (targetMovePos - rb.position).magnitude;
             pmState = PreyStates.Wander;
+        }
 
         currSpeed = prey.GetSpeed();
         // Debug.Log("Prey's speed is now " + currSpeed);
@@ -339,7 +342,11 @@ public class PreyMove : MonoBehaviour, ILAMove
                 if (pred || lostPred)
                     pmState = PreyStates.Reck;
                 else
+                {
+                    // GET NEW TARGET
+                    slowDist = (targetMovePos - rb.position).magnitude;
                     pmState = PreyStates.Wander;
+                }
             }
 
             // LOGIC TO SEEK AT TIRED SPEED, DEPENDING UPON PREDATOR PRESENCE OR LOST STATE
@@ -354,19 +361,18 @@ public class PreyMove : MonoBehaviour, ILAMove
         }
         else if (pmState == PreyStates.Wander)
         {
-            // move mode with more direct routes to targets?
-
-            // add logic for all other possible state transitions
+            if (SlowToTarget(targetMovePos, prey.moveSpeed))
+                Decelerate(0.0f);
+            else
+                Seek(prey.moveSpeed, targetMovePos);
         }
         else if (pmState == PreyStates.Reck)
         {
             //rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
 
             // seeks position while attempting to keep cover
-            if (!isJumping)
-            {
-                // Flee(prey.moveSpeed, targetMovePos);
-            }
+
+            // Flee(prey.moveSpeed, targetMovePos);
         }
         else if (pmState == PreyStates.Evade)
         {
@@ -391,11 +397,11 @@ public class PreyMove : MonoBehaviour, ILAMove
                 }
 
                 Flee(prey.fleeSpeed, predFuturePos);
+
+                // Debug.Log("distance to Predator is " + (DirToTarget(prey.position, rb.position)).magnitude);
             }
 
-            // Debug.Log("distance to Predator is " + (DirToTarget(prey.position, rb.position)).magnitude);
-
-            if(CheckSprintTime())
+            if (CheckSprintTime())
                 pmState = PreyStates.Rest;
         }
     }
@@ -421,6 +427,16 @@ public class PreyMove : MonoBehaviour, ILAMove
     public Vector3 GetFuturePos(Vector3 pos, Vector3 vel, bool useDeltaTime)
     {
         return pos + vel * (useDeltaTime ? Time.fixedDeltaTime : 1.0f);
+    }
+
+    public Vector3 GetLostPrediction()
+    {
+        return lastPredLocation + lastPredVelocity * lostPredTime;
+    }
+
+    public float GetSlowDistance(Vector3 targetPos)
+    {
+        return -(currSpeed * currSpeed / (prey.GetSpeedDown() * 2.0f));
     }
 
     public void Jump(Vector3 normalVec)
@@ -570,6 +586,11 @@ public class PreyMove : MonoBehaviour, ILAMove
         rb.MoveRotation(prey.rb.rotation * Quaternion.AngleAxis(useAngle, prey.transform.up));
     }
 
+    bool SlowToTarget(Vector3 targetPos, float avgSpeed)
+    {
+        return slowDist <= -(currSpeed * currSpeed) / (prey.GetSpeedDown() * 2.0f);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -578,7 +599,8 @@ public class PreyMove : MonoBehaviour, ILAMove
         // Set initial state to an idle Prey
         // pmState = PreyStates.Idle;
 
-        // TESTING ONLY
+        // TESTING ONLY; GET NEW TARGET IF GO HERE
+        slowDist = (targetMovePos - rb.position).magnitude;
         pmState = PreyStates.Wander;
 
         // Look for existing targets only
@@ -589,6 +611,17 @@ public class PreyMove : MonoBehaviour, ILAMove
     void Update()
     {
 
+    }
+
+    public void UpdatePredVectors()
+    {
+        Predator predStats = pred.GetComponent<Predator>();
+
+        lastPredLocation = pred.position;
+        lastPredVelocity = predStats.GetVelocity();
+
+        // Debug.Log("Predator is located at " + lastPredLocation);
+        // Debug.Log("Predator's velocity is " + lastPredVelocity);
     }
 
     public bool Watchful()
