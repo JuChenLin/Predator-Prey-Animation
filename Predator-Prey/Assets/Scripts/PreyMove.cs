@@ -5,7 +5,8 @@ using UnityEngine;
 public class PreyMove : MonoBehaviour, ILAMove
 {
     // TESTING ONLY
-    private Vector3 targetMovePos = new Vector3(10.0f, 0.5f, 10f);
+    // private Vector3 targetMovePos = new Vector3(10.0f, 0.5f, 10f);
+    public Vector3 targetMovePos = new Vector3(100.0f, 0.6f, 180f);
 
     // Enumerate the Prey movement states
     // *** need to determine how to handle jumps ***
@@ -361,10 +362,17 @@ public class PreyMove : MonoBehaviour, ILAMove
         }
         else if (pmState == PreyStates.Wander)
         {
+            // rb.MovePosition(rb.position + transform.forward * prey.moveSpeed * Time.fixedDeltaTime);
+
+            // TEST
+            Seek(prey.moveSpeed, targetMovePos);
+
+            /*
             if (SlowToTarget(targetMovePos, prey.moveSpeed))
                 Decelerate(0.0f);
             else
                 Seek(prey.moveSpeed, targetMovePos);
+            */
         }
         else if (pmState == PreyStates.Reck)
         {

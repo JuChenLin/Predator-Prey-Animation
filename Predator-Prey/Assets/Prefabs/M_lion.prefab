@@ -1159,7 +1159,7 @@ SphereCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 25
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0.67, y: 0.8, z: 0}
 --- !u!114 &7881791206105758631
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1172,11 +1172,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0764d9d63aad747b25921ad3064a1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetMovePos: {x: 0, y: 0, z: 0}
   anim: {fileID: 0}
   pred: {fileID: 0}
-  rb: {fileID: 0}
   prey: {fileID: 0}
+  rb: {fileID: 0}
   tColl: {fileID: 0}
+  preyAware: []
+  unseen: []
 --- !u!114 &7881791206105758630
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1204,14 +1207,18 @@ MonoBehaviour:
   breakForce: 750
   chaseSpeed: 22
   depthPerception: 25
+  strikeDistance: 6
   energy: 0
+  lostTimeLimit: 15
   maxStandJump: 7.672027
   pMass: 65
   monocFOV: 78.5
   moveSpeed: 4.470389
   pSize: {x: 0.5, y: 0.675, z: 1.28}
+  restTimeLimit: 10
   safeFall: 15
   speedUp: 9
+  sprintTimeLimit: 20
   stalkSpeed: 1.5
 --- !u!1 &2411238694957838764
 GameObject:

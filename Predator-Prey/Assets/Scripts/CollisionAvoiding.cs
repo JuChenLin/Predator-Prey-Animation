@@ -5,14 +5,17 @@ using UnityEngine;
 public class CollisionAvoiding : MonoBehaviour
 {
     // Get reference
-    public GameObject player;
+    // public GameObject player;
     public Rigidbody rb;
-    public SphereCollider tColl;
+    private string animName;
+    Predator pred;
+    Prey prey;
+    // public SphereCollider tColl;
 
     // Angent info, only for Testing
-    public float mass;
-    public float breakForce;
-    public float moveSpeed;
+    private float mass;
+    private float breakForce;
+    private float moveSpeed;
     // public float moveDirection;
     // public float depthPerception;
 
@@ -63,14 +66,27 @@ public class CollisionAvoiding : MonoBehaviour
     void Awake()
     {
         // Get reference
-        player = GameObject.Find("Player");
-        rb = player.GetComponent<Rigidbody>();
-        tColl = player.GetComponent<SphereCollider>();
-        obstacleMask = LayerMask.NameToLayer("Layer_Obstacle");
-        wallMask = LayerMask.NameToLayer("Layer_Wall");
+        // player = GameObject.Find("Player");
+        rb = GetComponent<Rigidbody>();
+
+        if (rb.tag == "tag_Predator")
+        {
+            animName = "Pred";
+            pred = GetComponent<Predator>();
+        }
+        else if (rb.tag == "tag_Prey")
+        {
+            animName = "Prey";
+            prey = GetComponent<Prey>();
+        }
+
+        // rb = player.GetComponent<Rigidbody>();
+        // tColl = player.GetComponent<SphereCollider>();
+        obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
+        wallMask = LayerMask.NameToLayer("layer_Wall");
 
         // Initial direction of animal for TESTING
-        transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+        // transform.rotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
 
         // Random number
         random01Coeficient = Random.Range(0.0f, 1.0f);
@@ -80,8 +96,25 @@ public class CollisionAvoiding : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        
         // Update animal position
-        rb.position += transform.forward * moveSpeed * Time.deltaTime;
+        //if (animName == "Prey")
+            //rb.position += transform.forward * moveSpeed * Time.deltaTime;
+        // else if (animName == "Pred")
+            //rb.position += transform.right * moveSpeed * Time.deltaTime;
+        
+
+        if (animName == "Pred")
+        {
+            moveSpeed = pred.GetSpeed();
+        }
+        else if (animName == "Prey")
+        {
+            Debug.Log("======PREY IS CALLED=====");
+            moveSpeed = prey.GetSpeed();
+        }
+
+        Debug.Log("moveSpeed is " + moveSpeed);
 
         ObstacleSensing();
         WallSensing();
@@ -115,6 +148,23 @@ public class CollisionAvoiding : MonoBehaviour
         }    
     }
 
+
+    private void Start()
+    {
+        if (animName == "Pred")
+        {
+            breakForce = pred.breakForce;
+            mass = rb.mass;
+            moveSpeed = pred.GetSpeed();
+        }
+        else if (animName == "Prey")
+        {
+            breakForce = prey.breakForce;
+            mass = rb.mass;
+            moveSpeed = prey.GetSpeed();
+        }
+    }
+
     private void WallSensing() 
     {
         // Sense walls
@@ -143,10 +193,16 @@ public class CollisionAvoiding : MonoBehaviour
      }
 
     private void Steering(int mask, Vector3 direction, float distance){
+        Vector3 forwardDirection = transform.forward;
 
         float counterCoefficient = (mask == wallMask)? ( wallCounterCoefficient/distance ) : obstCounterCoefficient; 
         float avoidDistance = (mask == wallMask)? wallAvoidDist : obstAvoidDist;
-        Vector3 forwardDirection = transform.forward; 
+
+        if (animName == "Pred")
+        {
+            Debug.Log("=======Predator detected, facing right=========");
+            forwardDirection = transform.right;
+        }
 
         // Culculate the max angular velocity the anaimal can do 
         maxAngularVel = breakForce / (mass * moveSpeed);
@@ -166,7 +222,7 @@ public class CollisionAvoiding : MonoBehaviour
          Debug.Log("Counter Force =  " + counterForce );
         //     Debug.Log("Counter Acceleration =  " + counterAcceleration);
         //     Debug.Log("Obstacle/Wall Distance Direction =  " + direction);
-        //     Debug.Log("Forward Direction =  " + forwardDirection);
+             Debug.Log("Forward Direction =  " + forwardDirection);
         //     Debug.Log("Parallel Direction =  " + paraDirection);
         //     Debug.Log("Obstacle/Wall Distance =  " + distance);    
         //-------------------------------------------
@@ -184,7 +240,7 @@ public class CollisionAvoiding : MonoBehaviour
         }
 
         // Normalize velocity vector
-        forwardDirection.Normalize();
-        transform.rotation = Quaternion.LookRotation(forwardDirection, Vector3.up);
+        // forwardDirection.Normalize();
+        transform.rotation = Quaternion.LookRotation(forwardDirection.normalized, Vector3.up);
      }
 }

@@ -96,14 +96,16 @@ public class Predator : MonoBehaviour, ILandAnimal
         prevPosition = rb.position;
 
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
-        viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
-            FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
-        viewPoint = rb.position + viewPointOffset;
+        // viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
+        //    FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
+        viewPoint = new Vector3(0.67f, 0.8f, 0.0f);
+        // viewPoint = rb.position + viewPointOffset;
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
         // jawPointOffset = FindDeepChild(transform, "b_Jaw").position - rb.position;
-        jawPoint = FindDeepChild(transform, "b_Jaw").position;
+        // jawPoint = rb.position + jawPointOffset;
+        // jawPoint = rb.position;
 
         // set Rigidbody mass equal to object's mass
         rb.mass = pMass;
@@ -137,7 +139,7 @@ public class Predator : MonoBehaviour, ILandAnimal
         speed = currVelocity.magnitude / Time.fixedDeltaTime;
         prevPosition = rb.position;
         turnRadius = MaxTurn();
-        viewPoint = rb.position + viewPointOffset;
+        //viewPoint = rb.position + viewPointOffset;
         jawPoint = rb.position + jawPointOffset;
     }
 

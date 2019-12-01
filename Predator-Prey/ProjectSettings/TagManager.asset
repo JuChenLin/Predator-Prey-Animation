@@ -7,6 +7,8 @@ TagManager:
   - tag_Predator
   - tag_Prey
   - tag_dummy
+  - Terrain
+  - Wall
   layers:
   - Default
   - TransparentFX
@@ -20,7 +22,7 @@ TagManager:
   - layer_Prey
   - layer_Dummy Target
   - layer_Obstacle
-  - 
+  - layer_Wall
   - 
   - 
   - 

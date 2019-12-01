@@ -5,7 +5,8 @@ using UnityEngine;
 public class PredMove : MonoBehaviour, ILAMove
 {
     // TESTING ONLY
-    private Vector3 targetMovePos = new Vector3(-10.0f, 0.5f, 10f);
+    // private Vector3 targetMovePos = new Vector3(-10.0f, 0.5f, 10f);
+    public Vector3 targetMovePos = new Vector3(0.0f, 0.0f, 0.0f);
 
     // Enumerate the Predator movement states
     // *** need to determine how to handle jumps ***
@@ -279,7 +280,7 @@ public class PredMove : MonoBehaviour, ILAMove
                 if (pmState == PredStates.Hunt)
                 {
                     // pmState = PredStates.Stalk;
-                    pmState = PredStates.Pursue;
+                    // pmState = PredStates.Pursue;
                 }
                 UpdatePreyVectors();
             }
@@ -392,10 +393,12 @@ public class PredMove : MonoBehaviour, ILAMove
             {
                 Debug.Log("SlowToTarget is " + SlowToTarget(pred.moveSpeed));
 
+                
                 if (SlowToTarget(pred.moveSpeed))
                     Decelerate(0.0f);
                 else
                     Seek(pred.moveSpeed, targetMovePos);
+                    
             }
         }
         else if (pmState == PredStates.Pursue)
@@ -590,7 +593,7 @@ public class PredMove : MonoBehaviour, ILAMove
 
     bool SlowToTarget(float avgSpeed)
     {
-        Debug.Log("distance to target is " + slowDist);
+        Debug.Log("distance to target is " + (targetMovePos - rb.position).magnitude);
         Debug.Log("calc distance to slow is " + -(currSpeed * currSpeed / (pred.GetSpeedDown() * 2.0f)));
         return slowDist <= -(avgSpeed * avgSpeed) / (pred.GetSpeedDown() * 2.0f);
     }

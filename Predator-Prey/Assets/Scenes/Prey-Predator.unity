@@ -374,6 +374,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ac0764d9d63aad747b25921ad3064a1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetMovePos: {x: 0, y: 0, z: 0}
   anim: {fileID: 0}
   pred: {fileID: 0}
   prey: {fileID: 0}
@@ -462,6 +463,21 @@ PrefabInstance:
         type: 3}
       propertyPath: moveSpeed
       value: 4.470389
+      objectReference: {fileID: 0}
+    - target: {fileID: 7881791206105758631, guid: 9c4760303b34b5943876a72eae5529ed,
+        type: 3}
+      propertyPath: targetMovePos.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7881791206105758631, guid: 9c4760303b34b5943876a72eae5529ed,
+        type: 3}
+      propertyPath: targetMovePos.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7881791206105758631, guid: 9c4760303b34b5943876a72eae5529ed,
+        type: 3}
+      propertyPath: targetMovePos.z
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9c4760303b34b5943876a72eae5529ed, type: 3}
@@ -1472,7 +1488,7 @@ PrefabInstance:
     - target: {fileID: 2281496300559636644, guid: 47cc19eaaacb2784689721bb15ee2c74,
         type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2281496300559636644, guid: 47cc19eaaacb2784689721bb15ee2c74,
         type: 3}

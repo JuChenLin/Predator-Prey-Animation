@@ -96,8 +96,8 @@ public class Prey : MonoBehaviour, ILandAnimal
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
         // viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position + 
         // FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
-        viewPointOffset = new Vector3(0.0f, 1.5f, 1.1f);
-        viewPoint = rb.position + viewPointOffset;
+        viewPoint = new Vector3(0.0f, 1.47f, 1.05f);
+        //viewPoint = rb.position + viewPointOffset;
         Debug.Log("Prey's viewpoint is " + viewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));

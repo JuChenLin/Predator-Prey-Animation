@@ -392,9 +392,9 @@ GameObject:
   - component: {fileID: 7820621536746323231}
   - component: {fileID: 7820621536746323216}
   - component: {fileID: 7820621536746323217}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: Deer_red_IP
-  m_TagString: Untagged
+  m_TagString: tag_Prey
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -496,7 +496,7 @@ SphereCollider:
   m_Enabled: 1
   serializedVersion: 2
   m_Radius: 25
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 1.47, z: 1.05}
 --- !u!65 &7820621536746323231
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -522,12 +522,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1929f60938014749b9508d858837cc4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  targetMovePos: {x: 10, y: 0.5, z: 10}
   anim: {fileID: 0}
+  pred: {fileID: 0}
   prey: {fileID: 0}
   rb: {fileID: 0}
-  pred: {fileID: 0}
   tColl: {fileID: 0}
-  currSpeed: 0
+  preyAware: []
+  unseen: []
 --- !u!114 &7820621536746323217
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -553,16 +555,20 @@ MonoBehaviour:
   viewPoint: {x: 0, y: 0, z: 0}
   binocFOV: 60
   breakForce: 900
-  chaseSpeed: 20
+  fleeSpeed: 20
   depthPerception: 25
   energy: 0
+  lostTimeLimit: 30
   maxStandJump: 7.672027
   pMass: 94
   monocFOV: 250
   moveSpeed: 4.470389
   pSize: {x: 0.81, y: 0.81, z: 0.81}
+  restTimeLimit: 20
   safeFall: 15
   speedUp: 9
+  sprintTimeLimit: 30
+  tiredMove: 2
 --- !u!1 &2365516792819845690
 GameObject:
   m_ObjectHideFlags: 0
