@@ -41,6 +41,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     public float chaseSpeed = 22.0f;
     // the maximum optimum distance of vision
     public float depthPerception = 25.0f;
+    // minimum distance to strike at prey
+    public float strikeDistance = 6.0f;
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
     // maximum time will continue looking for a lost prey (using last known location/velocity) : EXPERIMENT
@@ -61,6 +63,9 @@ public class Predator : MonoBehaviour, ILandAnimal
     // EXPERIMENTAL
     // scale multiples applied to model's transform
     public Vector3 pSize = new Vector3(0.79f, 0.79f, 0.79f);
+
+    // time needed to rest after sprint
+    public float restTimeLimit = 10.0f;
 
     // safe fall distance in meters
     public float safeFall = 15.0f;

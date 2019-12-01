@@ -26,19 +26,27 @@ public class PreyMove : MonoBehaviour, ILAMove
     public Rigidbody rb;
     // used for the sight trigger colliders
     public SphereCollider tColl;
+    // awareness of all Prey in sight
+    [SerializeField] private List<Rigidbody> preyAware = new List<Rigidbody>();
+    // "unseen" predator/prey within sphere of vision
+    [SerializeField] private List<Rigidbody> unseen = new List<Rigidbody>();
 
     // get speed value of the Prey
     private float currSpeed = 0.0f;
     private bool isJumping = false;
 
-    // the last known location and velocity of Predator
+    // the last known location and velocity of Predator (whether lost or not)
     private Vector3 lastPredLocation;
     private Vector3 lastPredVelocity;
 
+    // is predator lost? JUST CHECK pred!
+    private bool lostPred = false;
     // time since predator was lost
     private float lostPredTime = 0.0f;
+    // time resting
+    private float restTime = 0.0f;
     // time sprinting
-    private float sprintTime;
+    private float sprintTime = 0.0f;
 
     // current moving state of the Prey
     private PreyStates pmState;
@@ -63,6 +71,56 @@ public class PreyMove : MonoBehaviour, ILAMove
         rb.MovePosition(rb.position + transform.forward * (currSpeed + 0.5f * maxAccel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
     }
 
+    public bool addToAware(Rigidbody other)
+    {
+        bool gotPred = false;
+
+        if (other.tag == "tag_Predator")
+        {
+            if (!pred)
+            {
+                pred = other;
+                gotPred = true;
+            }
+
+            if (unseen.Contains(other))
+                unseen.Remove(other);
+        }
+        else if (other.tag == "tag_Prey")
+        {
+            if (!preyAware.Contains(other))
+                preyAware.Add(other);
+
+            if (unseen.Contains(other))
+                unseen.Remove(other);
+        }
+
+        return gotPred;
+    }
+
+    public bool addToUnseen(Rigidbody other)
+    {
+        Predator predStats = prey.GetComponent<Predator>();
+        bool lost = false;
+
+        lastPredLocation = pred.position;
+        lastPredVelocity = predStats.GetVelocity();
+
+        if (pred == other)
+        {
+            pred = null;
+            lost = true;
+        }
+
+        if (preyAware.Contains(other))
+            preyAware.Remove(other);
+
+        if (!unseen.Contains(other))
+            unseen.Add(other);
+
+        return lost;
+    }
+
     public void AdjSpeedForAngle(float maxSpeed, float desAngle)
     {
         float optSpeed = maxSpeed;
@@ -79,7 +137,7 @@ public class PreyMove : MonoBehaviour, ILAMove
         else if (optSpeed < 0.0f)
             optSpeed = 0.0f;
 
-       // Debug.Log("Prey's calculated optimal speed is " + optSpeed);
+        // Debug.Log("Prey's calculated optimal speed is " + optSpeed);
 
         if (optSpeed < currSpeed)
             Decelerate(optSpeed);
@@ -110,19 +168,21 @@ public class PreyMove : MonoBehaviour, ILAMove
     // isWatchful parameter includes Reck and Hide states
     public bool CheckFOV(Rigidbody other, bool isWatchful)
     {
-        float angleToPredator = DegAngleToTarget(other.position, prey.GetBodyPositions()[0]);
+        float angleToTarget = DegAngleToTarget(other.position, prey.GetBodyPositions()[0]);
 
         // Debug.Log("angleToPredator: " + angleToPredator);
         // Debug.Log("Prey: watching FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
-        if(angleToPredator < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)) && other.gameObject.GetSpeed() )
+        if (angleToTarget < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)))
         {
             RaycastHit hit;
 
-            if(Physics.Raycast(prey.GetBodyPositions()[0], DirToTarget(other.position, prey.GetBodyPositions()[0]), out hit, tColl.radius, 1 << predMask))
-            {     
+            // only worry about the predator or prey
+            if (Physics.Raycast(prey.GetBodyPositions()[0], DirToTarget(other.position, prey.GetBodyPositions()[0]).normalized,
+                out hit, tColl.radius, (1 << predMask) | (1 << preyMask)))
+            {
                 if (hit.collider.attachedRigidbody == other)
                 {
-                    // Debug.Log("Prey: returned true in FOV");
+                    Debug.Log("Prey: hit " + hit.rigidbody.gameObject.name);
                     return true;
                 }
                 else
@@ -135,17 +195,79 @@ public class PreyMove : MonoBehaviour, ILAMove
         return false;
     }
 
+    // this function assumes any past awareness of predator and other prey has already been established
+    // used primarily for sphere collider OnTriggerExit
+    bool CheckLost(Collider other)
+    {
+        // don't do anything if predator hasn't already been detected
+        // or if Collider is a trigger
+        if (!pred || other.isTrigger)
+            return false;
+
+        if (addToUnseen(other.attachedRigidbody))
+        {
+            Debug.Log("ADD LOST PROTOCOL HERE, OR HANDLE IN FIXED UPDATE");
+        }
+
+        return true;
+    }
+
+    public bool CheckLostTime()
+    {
+        if (lostPredTime > prey.lostTimeLimit)
+        {
+            ResetLost();
+            if (pmState != PreyStates.Rest)
+                pmState = PreyStates.Wander;
+            return true;
+        }
+        return false;
+    }
+
+    public bool CheckRestTime()
+    {
+        if (restTime >= prey.restTimeLimit)
+        {
+            ResetRest();
+            return true;
+        }
+
+        return false;
+    }
+
+    public bool CheckSprintTime()
+    {
+        if (sprintTime >= prey.sprintTimeLimit)
+        {
+            ResetSprint();
+            return true;
+        }
+
+        return false;
+    }
+
+    // checks for presence of predator or other prey
     public void CheckTrigger(Collider other, bool isWatchful)
     {
         Rigidbody potentPred = other.attachedRigidbody;
 
-        if (potentPred && CheckFOV(potentPred, isWatchful))
+        // do nothing if there is no rigidbody
+        if (!potentPred)
+            return;
+
+        string rbType = potentPred.tag;
+        bool seen = CheckFOV(potentPred, isWatchful);
+
+        if (seen)
         {
-            // pmState = PredatorMove.Evade;
-            pmState = PreyStates.Hide;
-            pred = potentPred;
-            lastPredLocation = pred.position;
-            // Debug.Log("Predator is located at " + lastPredLocation);
+            if (addToAware(potentPred))
+            {
+                // take action against the seen predator
+                // pmState = PredatorMove.Evade;
+                pmState = PreyStates.Hide;
+                lastPredLocation = pred.position;
+                // Debug.Log("Predator is located at " + lastPredLocation);
+            }
         }
     }
 
@@ -184,13 +306,19 @@ public class PreyMove : MonoBehaviour, ILAMove
 
     void FixedUpdate()
     {
+        if (CheckLostTime() && pmState != PreyStates.Rest)
+            pmState = PreyStates.Wander;
+
         currSpeed = prey.GetSpeed();
         // Debug.Log("Prey's speed is now " + currSpeed);
 
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
 
-        // JUMP TEST     
+        if (lostPred)
+            lostPredTime += Time.fixedDeltaTime;
+
+        // JUMP TEST
         /*
         if(!isJumping)
         {
@@ -201,8 +329,22 @@ public class PreyMove : MonoBehaviour, ILAMove
         if (pmState == PreyStates.Rest)
         {
             // recover energy
+            restTime += Time.fixedDeltaTime;
 
-            // add logic for all other possible state transitions
+            if (CheckRestTime())
+            {
+                ResetRest();
+
+                // continue to be watchful if a predator is known or anticipated
+                if (pred || lostPred)
+                    pmState = PreyStates.Reck;
+                else
+                    pmState = PreyStates.Wander;
+            }
+
+            // LOGIC TO SEEK AT TIRED SPEED, DEPENDING UPON PREDATOR PRESENCE OR LOST STATE
+            // SUCH AS
+            // Seek(prey.tiredMove, TARGET), where TARGET is determined as if Reck;
         }
         else if (pmState == PreyStates.Idle)
         {
@@ -229,22 +371,56 @@ public class PreyMove : MonoBehaviour, ILAMove
         else if (pmState == PreyStates.Evade)
         {
             Vector3 predFuturePos;
+            Predator predStats;
 
-            Predator predStats = pred.GetComponent<Predator>();
+            sprintTime += Time.fixedDeltaTime;
 
-            if (predStats.chaseSpeed == 0.0f)
+            if (pred)
             {
-                predFuturePos = pred.position;
-            }
-            else
-            {
-                // predFuturePos = pred.position + predStats.GetSpeed() * (DirToTarget(pred.position, rb.position) / predStats.chaseSpeed);
-                predFuturePos = pred.position + predStats.GetVelocity() * Time.fixedDeltaTime;
+                predStats = pred.GetComponent<Predator>();
+
+                if (predStats.chaseSpeed == 0.0f)
+                {
+                    predFuturePos = pred.position;
+                }
+                else
+                {
+                    // predFuturePos = pred.position + predStats.GetSpeed() * (DirToTarget(pred.position, rb.position) / predStats.chaseSpeed);
+                    // predFuturePos = pred.position + predStats.GetVelocity() * Time.fixedDeltaTime;
+                    predFuturePos = GetFuturePos(pred.position, predStats.GetVelocity(), true);
+                }
+
+                Flee(prey.fleeSpeed, predFuturePos);
             }
 
-            Flee(prey.fleeSpeed, predFuturePos);
             // Debug.Log("distance to Predator is " + (DirToTarget(prey.position, rb.position)).magnitude);
+
+            if(CheckSprintTime())
+                pmState = PreyStates.Rest;
         }
+    }
+
+    public void FullScan()
+    {
+        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << preyMask);
+
+        Debug.Log("Prey: inRange length is " + inRange.Length);
+
+        if (inRange.Length == 0)
+            return;
+
+        foreach (Collider c in inRange)
+        {
+            if (inRange.Length > 0 && Watchful())
+            {
+                CheckTrigger(c, true);
+            }
+        }
+    }
+
+    public Vector3 GetFuturePos(Vector3 pos, Vector3 vel, bool useDeltaTime)
+    {
+        return pos + vel * (useDeltaTime ? Time.fixedDeltaTime : 1.0f);
     }
 
     public void Jump(Vector3 normalVec)
@@ -269,7 +445,7 @@ public class PreyMove : MonoBehaviour, ILAMove
     {
         // SEE SEEK BELOW, AS IT HAS BEEN MODIFIED
         // SEEK CAN BE USED FOR FLEE, JUST A DIFFERENT TARGET, AS PURSUE STATE DOES
-        
+
         /*
         // if not already moving, first get a bearing
         float changeAngle = 0.0f;
@@ -316,6 +492,22 @@ public class PreyMove : MonoBehaviour, ILAMove
         */
     }
 
+    public void ResetLost()
+    {
+        lostPredTime = 0.0f;
+        lostPred = false;
+    }
+
+    public void ResetRest()
+    {
+        restTime = 0.0f;
+    }
+
+    public void ResetSprint()
+    {
+        sprintTime = 0.0f;
+    }
+
     public void Seek(float maxSpeed, Vector3 target)
     {
         float turn = prey.MaxTurn();
@@ -326,7 +518,8 @@ public class PreyMove : MonoBehaviour, ILAMove
         // calculate current velocity (m/s)
         Vector3 currVelocity = prey.GetVelocity().normalized;
         // anticipated future position based upon current velocity
-        Vector3 futurePos = rb.position + currVelocity * currSpeed;
+        // Vector3 futurePos = rb.position + currVelocity * currSpeed;
+        Vector3 futurePos = GetFuturePos(rb.position, currVelocity * currSpeed, false);
 
         float futureAngleToTarget = DegAngleToTarget(target, futurePos);
 
@@ -386,22 +579,23 @@ public class PreyMove : MonoBehaviour, ILAMove
         // pmState = PreyStates.Idle;
 
         // TESTING ONLY
-        pmState = PreyStates.Reck;
+        pmState = PreyStates.Wander;
 
-        // Look for existing targets only 
-        Collider[] inRange = Physics.OverlapSphere(tColl.center, tColl.radius, 1 << predMask);
-
-        // Debug.Log("Prey: inRange length is " + inRange.Length);
-
-        if (inRange.Length > 0 && pmState == PreyStates.Reck)
-        {
-            CheckTrigger(inRange[0], true);
-        }
+        // Look for existing targets only
+        FullScan();
     }
 
     // Update is called once per frame
     void Update()
     {
 
+    }
+
+    public bool Watchful()
+    {
+        if ((pmState == PreyStates.Evade) || (pmState == PreyStates.Hide) || (pmState == PreyStates.Reck))
+            return true;
+
+        return false;
     }
 }
