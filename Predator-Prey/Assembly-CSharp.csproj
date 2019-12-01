@@ -62,7 +62,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Material\Mountain Terrain\Misc\CameraDefault.cs" />
     <Compile Include="Assets\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\CollisionAvoiding.cs" />
     <Compile Include="Assets\Scripts\DummyTarget.cs" />
     <Compile Include="Assets\Scripts\EatPrey.cs" />
     <Compile Include="Assets\Scripts\ILAMove.cs" />
@@ -72,8 +74,13 @@
     <Compile Include="Assets\Scripts\PredMove.cs" />
     <Compile Include="Assets\Scripts\Prey.cs" />
     <Compile Include="Assets\Scripts\PreyMove.cs" />
+    <None Include="Assets\Objects\laxer tree pkg\README.txt" />
+    <None Include="Assets\Samples\Terrain Tools\0.1.0-preview\Terrain Assets\ThirdPartyNotices.txt" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TerrainTools">
+      <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TerrainTools.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VSCode.Editor">
       <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.VSCode.Editor.dll</HintPath>
@@ -95,6 +102,9 @@
     </Reference>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.TerrainTools.Editor">
+      <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/Unity.TerrainTools.Editor.dll</HintPath>
     </Reference>
     <Reference Include="UnityEditor.UI">
       <HintPath>C:/Users/artif/Documents/GitHub/Predator-Prey/Predator-Prey/Library/ScriptAssemblies/UnityEditor.UI.dll</HintPath>

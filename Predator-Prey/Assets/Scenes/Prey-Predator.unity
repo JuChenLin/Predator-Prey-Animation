@@ -341,7 +341,7 @@ MonoBehaviour:
   monocFOV: 78.5
   moveSpeed: 2.777777
   pSize: {x: 0.5, y: 0.675, z: 1.28}
-  restTime: 20
+  restTimeLimit: 10
   safeFall: 15
   speedUp: 9
   sprintTimeLimit: 20
@@ -379,6 +379,8 @@ MonoBehaviour:
   prey: {fileID: 0}
   rb: {fileID: 0}
   tColl: {fileID: 0}
+  preyAware: []
+  unseen: []
 --- !u!1001 &250623933
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1080,7 +1082,7 @@ Camera:
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
-  m_HDR: 1
+  m_HDR: 0
   m_AllowMSAA: 1
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
