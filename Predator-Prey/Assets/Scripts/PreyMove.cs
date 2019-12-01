@@ -20,8 +20,8 @@ public class PreyMove : MonoBehaviour, ILAMove
     };
 
     public Animator anim;
-    // used for target predator
     public Rigidbody pred;
+    // used for target predator
     public Prey prey;
     public Rigidbody rb;
     // used for the sight trigger colliders
@@ -114,7 +114,7 @@ public class PreyMove : MonoBehaviour, ILAMove
 
         // Debug.Log("angleToPredator: " + angleToPredator);
         // Debug.Log("Prey: watching FOV limit to each side: " + (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)));
-        if(angleToPredator < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)))
+        if(angleToPredator < (prey.binocFOV * 0.5f + (isWatchful ? prey.monocFOV : 0.0f)) && other.gameObject.GetSpeed() )
         {
             RaycastHit hit;
 

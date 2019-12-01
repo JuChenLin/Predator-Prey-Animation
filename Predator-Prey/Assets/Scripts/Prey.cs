@@ -44,7 +44,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     // mimics energy expenditure and affects possible move modes, efficiency, and termination of scenario
     public float energy = 0.0f;
     // maximum time will continue evading a lost predator (using last known location/velocity) : EXPERIMENT
-    public float lostTimeLimit = 15.0f;
+    public float lostTimeLimit = 30.0f;
 
     // EXPERIMENTAL
     // max initial velocity (m/s) from a standing jump
@@ -54,7 +54,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float pMass = 94.0f;
 
     // monocFOV is monocular field of vision, in degrees
-    public float monocFOV = 250.0f;
+    public float monocFOV = 125.0f;
     // normal move speed in m/s
     public float moveSpeed = 4.470389f;
 
