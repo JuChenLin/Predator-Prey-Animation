@@ -1,5 +1,5 @@
 sceneSetups:
-- path: Assets/Terrian.unity
+- path: Assets/Scenes/Prey-Predator.unity
   isLoaded: 1
   isActive: 1
   isSubScene: 0
