@@ -333,6 +333,7 @@ MonoBehaviour:
   breakForce: 750
   chaseSpeed: 22
   depthPerception: 25
+  strikeDistance: 6
   energy: 0
   lostTimeLimit: 15
   maxStandJump: 7.672027
@@ -340,6 +341,7 @@ MonoBehaviour:
   monocFOV: 78.5
   moveSpeed: 2.777777
   pSize: {x: 0.5, y: 0.675, z: 1.28}
+  restTime: 20
   safeFall: 15
   speedUp: 9
   sprintTimeLimit: 20

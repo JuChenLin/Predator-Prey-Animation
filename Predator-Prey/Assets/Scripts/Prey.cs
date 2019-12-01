@@ -62,13 +62,19 @@ public class Prey : MonoBehaviour, ILandAnimal
     // scale multiples applied to model's transform
     public Vector3 pSize = new Vector3(0.81f, 0.81f, 0.81f);
 
+    // time needed to rest after sprint
+    public float restTimeLimit = 20.0f;
+
     // safe fall distance in meters
     public float safeFall = 15.0f;
     // increased velocity increments (m/s^2), with chase speed as limit
     public float speedUp = 9.0f;
 
     // time limit to a sprint : EXPERIMENT
-    public float sprintTimeLimit = 20.0f;
+    public float sprintTimeLimit = 30.0f;
+
+    // max speed when "Resting"
+    public float tiredMove = 2.0f;
 
     // Awake is called before Start and just after prefabs are instantiated
     void Awake()
