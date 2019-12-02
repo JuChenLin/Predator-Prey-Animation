@@ -1205,8 +1205,8 @@ MonoBehaviour:
   speed: 0
   speedDown: 0
   turnRadius: 180
-  viewPointOffset: {x: 0, y: 0, z: 0}
-  viewPoint: {x: 0, y: 0, z: 0}
+  localViewPoint: {x: 0, y: 0, z: 0}
+  globalViewPoint: {x: 0, y: 0, z: 0}
   binocFOV: 130
   breakForce: 750
   chaseSpeed: 22

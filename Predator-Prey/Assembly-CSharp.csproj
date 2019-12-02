@@ -74,6 +74,7 @@
     <Compile Include="Assets\Scripts\PredMove.cs" />
     <Compile Include="Assets\Scripts\Prey.cs" />
     <Compile Include="Assets\Scripts\PreyMove.cs" />
+    <Compile Include="Assets\Scripts\WorldController.cs" />
     <None Include="Assets\Objects\laxer tree pkg\README.txt" />
     <None Include="Assets\Samples\Terrain Tools\0.1.0-preview\Terrain Assets\ThirdPartyNotices.txt" />
     <Reference Include="Unity.Timeline.Editor">

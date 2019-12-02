@@ -242,11 +242,7 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             if (!prey.gameObject.activeSelf)
             {
-                preyAware.Remove(prey);
-                prey = null;
-
-                if (preyAware.Count > 0)
-                    prey = preyAware[0];
+                RemoveFromLists(prey);
 
                 // EXPERIMENTAL
                 slowDist = (targetMovePos - rb.position).magnitude;
@@ -383,7 +379,17 @@ public class PredMove : MonoBehaviour, ILAMove
             else
             {
                 lostPreyTime += Time.fixedDeltaTime;
+
                 targetMovePos = PredictLostLocation();
+                
+                // predicted prey movement would leave the environment
+                // abort the chase
+                if (targetMovePos.x < xLeftLimit || targetMovePos.x > xRightLimit ||
+                    targetMovePos.z < zFrontLimit || targetMovePos.z > zBackLimit)
+                {
+                    ChooseTarget();
+                    pmState = PredStates.Hunt;
+                }
             }
 
             if (pmState == PredStates.Stalk)
@@ -577,7 +583,12 @@ public class PredMove : MonoBehaviour, ILAMove
 
     private void OnTriggerExit(Collider other)
     {
-        CheckLost(other);
+        // don't do anything if collider has no Rigidbody
+        if (!other.attachedRigidbody)
+            return;
+
+        if (!CheckLost(other))
+            RemoveFromLists(other.attachedRigidbody);
 
         if (pmState == PredStates.Stalk)
             Chase(other);
@@ -586,6 +597,23 @@ public class PredMove : MonoBehaviour, ILAMove
     public Vector3 PredictLostLocation()
     {
         return lastPreyLocation + lastPreyVelocity * lostPreyTime;
+    }
+
+    public void RemoveFromLists(Rigidbody gone)
+    {
+        if (preyAware.Contains(gone))
+            preyAware.Remove(gone);
+
+        if (unseen.Contains(gone))
+            unseen.Remove(gone);
+
+        if (gone == prey)
+        {
+            prey = null;
+
+            if (preyAware.Count > 0)
+                prey = preyAware[0];
+        }
     }
 
     public void ResetLost()
