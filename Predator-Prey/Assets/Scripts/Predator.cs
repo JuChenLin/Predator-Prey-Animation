@@ -24,8 +24,8 @@ public class Predator : MonoBehaviour, ILandAnimal
     // calculated max turning radius for the current velocity
     [SerializeField] private float turnRadius = 180.0f;
     // calculated viewpoint and viewpoint offset from the Predator's position
-    [SerializeField] private Vector3 viewPointOffset = new Vector3();
-    [SerializeField] private Vector3 viewPoint = new Vector3();
+    [SerializeField] private Vector3 localViewPoint = new Vector3();
+    [SerializeField] private Vector3 globalViewPoint = new Vector3();
 
     // the type of land animal (Predator or Prey)
     private string type;
@@ -98,8 +98,8 @@ public class Predator : MonoBehaviour, ILandAnimal
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
         // viewPointOffset = (FindDeepChild(transform, "b_eyelid_left_upper").position +
         //    FindDeepChild(transform, "b_eyelid_right_upper").position) * 0.5f - rb.position;
-        viewPoint = new Vector3(0.67f, 0.8f, 0.0f);
-        // viewPoint = rb.position + viewPointOffset;
+        localViewPoint = new Vector3(0.67f, 0.8f, 0.0f);
+        globalViewPoint = transform.TransformPoint(localViewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
@@ -139,13 +139,19 @@ public class Predator : MonoBehaviour, ILandAnimal
         speed = currVelocity.magnitude / Time.fixedDeltaTime;
         prevPosition = rb.position;
         turnRadius = MaxTurn();
-        //viewPoint = rb.position + viewPointOffset;
+        globalViewPoint = rb.position + localViewPoint;
         jawPoint = rb.position + jawPointOffset;
     }
 
-    public Vector3[] GetBodyPositions()
+    public Vector3[] GetGlobalBodyPositions()
     {
-        Vector3[] bodyPos = {viewPoint, jawPoint};
+        Vector3[] bodyPos = {globalViewPoint, jawPoint};
+        return bodyPos;
+    }
+
+    public Vector3[] GetLocalBodyPositions()
+    {
+        Vector3[] bodyPos = {localViewPoint, jawPoint};
         return bodyPos;
     }
 

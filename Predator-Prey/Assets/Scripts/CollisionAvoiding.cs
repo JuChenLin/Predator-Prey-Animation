@@ -110,11 +110,8 @@ public class CollisionAvoiding : MonoBehaviour
         }
         else if (animName == "Prey")
         {
-            Debug.Log("======PREY IS CALLED=====");
             moveSpeed = prey.GetSpeed();
         }
-
-        Debug.Log("moveSpeed is " + moveSpeed);
 
         ObstacleSensing();
         WallSensing();
@@ -140,7 +137,7 @@ public class CollisionAvoiding : MonoBehaviour
                 // Debug.Log("player position =  " + rb.position);
                 // Debug.Log("obstacle position =  " + obstacle.transform.position);
                 Debug.DrawLine(transform.position, obstacleHit.point);
-                Debug.Log("Obst Distance =  " + obstacleHit.distance);
+                // Debug.Log("Obst Distance =  " + obstacleHit.distance);
                 //-------------------------------------------
 
                 Steering(obstacleMask, obstDirection, obstDistance);
@@ -200,7 +197,6 @@ public class CollisionAvoiding : MonoBehaviour
 
         if (animName == "Pred")
         {
-            Debug.Log("=======Predator detected, facing right=========");
             forwardDirection = transform.right;
         }
 

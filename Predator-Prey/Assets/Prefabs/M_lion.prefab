@@ -1061,6 +1061,7 @@ GameObject:
   - component: {fileID: 7881791206105758634}
   - component: {fileID: 7881791206105758631}
   - component: {fileID: 7881791206105758630}
+  - component: {fileID: -9179646562646473806}
   m_Layer: 8
   m_Name: M_lion
   m_TagString: tag_Predator
@@ -1118,7 +1119,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 1
-  m_Constraints: 0
+  m_Constraints: 10
   m_CollisionDetection: 0
 --- !u!65 &7881791206105758628
 BoxCollider:
@@ -1180,6 +1181,9 @@ MonoBehaviour:
   tColl: {fileID: 0}
   preyAware: []
   unseen: []
+  seekTimeLimit: 2
+  seekDistLimit: 2
+  seekTime: 0
 --- !u!114 &7881791206105758630
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1220,6 +1224,25 @@ MonoBehaviour:
   speedUp: 9
   sprintTimeLimit: 20
   stalkSpeed: 1.5
+--- !u!114 &-9179646562646473806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2179832662857859258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa56c364cca8c0a449a684d8f97267a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rb: {fileID: 0}
+  obstAlertDist: 10
+  obstAvoidDist: 5
+  obstCounterCoefficient: 300
+  wallAlertDist: 20
+  wallAvoidDist: 10
+  wallCounterCoefficient: 500
 --- !u!1 &2411238694957838764
 GameObject:
   m_ObjectHideFlags: 0

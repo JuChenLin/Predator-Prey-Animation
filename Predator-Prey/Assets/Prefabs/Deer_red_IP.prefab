@@ -392,6 +392,7 @@ GameObject:
   - component: {fileID: 7820621536746323231}
   - component: {fileID: 7820621536746323216}
   - component: {fileID: 7820621536746323217}
+  - component: {fileID: -5611663355675221948}
   m_Layer: 9
   m_Name: Deer_red_IP
   m_TagString: tag_Prey
@@ -482,7 +483,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 10
   m_CollisionDetection: 0
 --- !u!135 &7820621536746323230
 SphereCollider:
@@ -569,6 +570,25 @@ MonoBehaviour:
   speedUp: 9
   sprintTimeLimit: 30
   tiredMove: 2
+--- !u!114 &-5611663355675221948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2281496300559636644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa56c364cca8c0a449a684d8f97267a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rb: {fileID: 0}
+  obstAlertDist: 10
+  obstAvoidDist: 5
+  obstCounterCoefficient: 300
+  wallAlertDist: 20
+  wallAvoidDist: 10
+  wallCounterCoefficient: 500
 --- !u!1 &2365516792819845690
 GameObject:
   m_ObjectHideFlags: 0
