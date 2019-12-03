@@ -1040,10 +1040,9 @@ GameObject:
   - component: {fileID: 408037472}
   - component: {fileID: 408037471}
   - component: {fileID: 408037470}
-  - component: {fileID: 408037474}
   - component: {fileID: 408037475}
-  - component: {fileID: 408037478}
   - component: {fileID: 408037477}
+  - component: {fileID: 408037474}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1147,9 +1146,9 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 408037468}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c5597cd44c34aa94183b5a6b593e2440, type: 3}
+  m_Script: {fileID: 11500000, guid: 74010d5c9cdca5943b18720d0ae1efd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   velocity: 5
@@ -1195,30 +1194,6 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 8
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &408037478
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 408037468}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 05a9ab5efd27a3442b32ea497196a0f4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  rb: {fileID: 408037470}
-  tColl: {fileID: 0}
-  mass: 45
-  breakForce: 900
-  moveSpeed: 20
-  obstAlertDist: 15
-  obstAvoidDist: 5
-  obstCounterCoefficient: 30
-  wallAlertDist: 40
-  wallAvoidDist: 15
-  wallCounterCoefficient: 1000
 --- !u!1 &408672062
 GameObject:
   m_ObjectHideFlags: 0
@@ -1783,12 +1758,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 577545735}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c127aa5692060124786a26ff355e2de7, type: 3}
+  m_Script: {fileID: 11500000, guid: 6575c2f0408feb646aa2d973b6565882, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 408037469}
-  offsetPos: {x: 0, y: 3, z: 10}
-  moveSpeed: 15
+  offsetPos: {x: 0, y: 10, z: -10}
+  moveSpeed: 5
   turnSpeed: 10
   smoothSpeed: 0.5
 --- !u!4 &583636395 stripped

@@ -24,8 +24,8 @@ public class Prey : MonoBehaviour, ILandAnimal
     // calculated max turning radius for the current velocity
     [SerializeField] private float turnRadius = 180.0f;
     // calculated viewpoint and viewpoint offset from the Prey's position
-    [SerializeField] private Vector3 viewPointOffset = new Vector3();
-    [SerializeField] private Vector3 viewPoint = new Vector3();
+    [SerializeField] private Vector3 localViewPoint = new Vector3();
+    [SerializeField] private Vector3 globalViewPoint = new Vector3();
 
     // the type of land animal (Predator or Prey)
     private string type;
@@ -64,6 +64,7 @@ public class Prey : MonoBehaviour, ILandAnimal
 
     // time needed to rest after sprint
     public float restTimeLimit = 20.0f;
+    public float watchTimeLimit = 50.0f;
 
     // safe fall distance in meters
     public float safeFall = 15.0f;
@@ -71,7 +72,7 @@ public class Prey : MonoBehaviour, ILandAnimal
     public float speedUp = 9.0f;
 
     // time limit to a sprint : EXPERIMENT
-    public float sprintTimeLimit = 30.0f;
+    public float sprintTimeLimit = 10.0f;
 
     // max speed when "Resting"
     public float tiredMove = 2.0f;
@@ -96,9 +97,9 @@ public class Prey : MonoBehaviour, ILandAnimal
         // set viewpoint for Raycasting, simulating environmental awareness/FOV
         // viewPointOffset = (FindDeepChild(transform, "eyelid_up.L").position + 
         // FindDeepChild(transform, "eyelid_up.R").position) * 0.5f - rb.position;
-        viewPoint = new Vector3(0.0f, 1.47f, 1.05f);
+        localViewPoint = new Vector3(0.67f, 0.8f, 0.0f);
+        globalViewPoint = transform.TransformPoint(localViewPoint);
         //viewPoint = rb.position + viewPointOffset;
-        Debug.Log("Prey's viewpoint is " + viewPoint);
         // set position of "forefeet" to navigate sharply raised terrain
         // foreFeet.Set(transform.position.x, transform.position.y - (pSize.y * 0.5f), transform.position.z + (pSize.z * 0.5f));
         // set jaw point for determining epsilon distance
@@ -138,16 +139,28 @@ public class Prey : MonoBehaviour, ILandAnimal
         speed = currVelocity.magnitude / Time.fixedDeltaTime;
         prevPosition = rb.position;
         turnRadius = MaxTurn();
-        viewPoint = rb.position + viewPointOffset;
+        globalViewPoint = rb.position + localViewPoint;
         jawPoint = rb.position + jawPointOffset;
     }
 
-    ///*
-    public Vector3[] GetBodyPositions()
+    public Vector3[] GetGlobalBodyPositions()
     {
-        Vector3[] bodyPos = {viewPoint, jawPoint};
+        Vector3[] bodyPos = {globalViewPoint, jawPoint};
         return bodyPos;
     }
+
+    public Vector3[] GetLocalBodyPositions()
+    {
+        Vector3[] bodyPos = {localViewPoint, jawPoint};
+        return bodyPos;
+    }
+
+    ///*
+    // public Vector3[] GetBodyPositions()
+    // {
+    //     Vector3[] bodyPos = {viewPoint, jawPoint};
+    //     return bodyPos;
+    // }
     //*/
 
     public Vector3 GetPrevPosition()

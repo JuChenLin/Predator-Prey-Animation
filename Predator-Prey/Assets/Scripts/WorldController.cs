@@ -7,60 +7,77 @@ public class WorldController : MonoBehaviour
     // used to assign which predator object to CameraController
     public GameObject mainCamera;
     private CameraController cc;
+    private FlyCamera fly;
 
     // used for respawning Predator
     public GameObject predator;
+    Rigidbody rigid;
 
     public GameObject predPrefab;
     public GameObject preyPrefab;
 
     // key codes for predator respawn
     // for respawn in place
+
     public KeyCode respawnIP = KeyCode.R;
-    // for random respawn
+    // for respawn to "safe" start point
     public KeyCode respawnRand = KeyCode.C;
     // for disabling/reenabling follow camera
     public KeyCode follow = KeyCode.F;
 
     // minimum allowed distance from another animal
-    public float allowedDist = 5.0f;
+    public float allowedDist = 3.0f;
 
-    // # of predators and prey you wish to spawn
-    readonly private int numPredators = 0;
-    readonly private int numPrey = 6;
+    // # of prey you wish to spawn
+    readonly private int numPrey = 12;
+    private int preySpawned = 0;
 
-    readonly private float xLeftLimit = 35.0f;
-    readonly private float xRightLimit = 250.0f;
-    readonly private float zFrontLimit = 25.0f;
-    readonly private float zBackLimit = 200.0f;
+    // max number of tries to attempt choosing target
+    // before a default is chosen (avoid infinite loop)
+    readonly int maxTries = 5;
+    private int tryCount = 1;
+
+    readonly private float xLeftLimit = 45.0f;
+    readonly private float xRightLimit = 240.0f;
+    readonly private float zFrontLimit = 35.0f;
+    readonly private float zBackLimit = 190.0f;
     readonly private float safeRayHeight = 60.0f;
-    readonly private float rayLength = 70.0f;
+    readonly private float rayLength = 100.0f;
 
     private Vector3 spawnPoint;
+    private Vector3 startPoint = new Vector3(68.0f, 0.7f, 180.0f);
 
     private int predMask;
     private int preyMask;
+    private int obstacleMask;
 
     void Awake()
     {
         cc = mainCamera.GetComponent<CameraController>();
+        fly = mainCamera.GetComponent<FlyCamera>();
+
+        obstacleMask = LayerMask.NameToLayer("layer_Obstacle");
+        preyMask = LayerMask.NameToLayer("layer_Prey");
+        predMask = LayerMask.NameToLayer("layer_Predator");
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        // spawn the Predator(s) first
-        for (int i = 0; i < numPredators; i++)
-        {
-            ChooseTarget();
-            Spawn(predPrefab);
-        }
+        rigid = predator.GetComponent<Rigidbody>();
 
-        // then spawn the Prey
+        cc.enabled = true;
+        fly.enabled = false;
+
+        // spawn the Prey
         for (int i = 0; i < numPrey; i++)
         {
-            ChooseTarget();
-            Spawn(preyPrefab);
+            if (!ChooseTarget())
+            {
+                Debug.Log("could not spawn this Prey!");
+            }
+            else
+                Spawn(preyPrefab);
         }
     }
 
@@ -74,48 +91,64 @@ public class WorldController : MonoBehaviour
 
         if (Input.GetKeyDown(respawnRand))
         {
-            RespawnPredRandom();
+            RespawnPredStart();
         }
         if (Input.GetKeyDown(follow))
         {
-            // toggle on and off
+            // switch cameras
             cc.enabled = !cc.enabled;
 
-            if (!cc.enabled)
+            if (cc.enabled)
             {
-                Debug.Log("Camera follow toggled");
+                fly.enabled = false;
+            }
+            else
+                fly.enabled = true;
+
+
+            if (fly.enabled)
+            {
                 mainCamera.transform.position = new Vector3(125.0f, 60.0f, 125.0f);
                 mainCamera.transform.rotation = Quaternion.Euler(new Vector3(45.0f, -45.0f, 0.0f));
             }
         }
     }
 
-    void ChooseTarget()
+    bool ChooseTarget()
     {
         bool foundTarget = false;
         float xCoord = Random.Range(xLeftLimit, xRightLimit);
         float zCoord = Random.Range(zFrontLimit, zBackLimit);
 
+        Ray ray = new Ray(new Vector3(xCoord, safeRayHeight, zCoord), Vector3.down);
         RaycastHit hit;
+        TerrainCollider tc = Terrain.activeTerrain.GetComponent<TerrainCollider>();
 
-        while (!foundTarget)
+        while (tryCount <= maxTries && !foundTarget)
         {
-            if (Physics.Raycast(new Vector3(xCoord, safeRayHeight, zCoord), Vector3.down, out hit, rayLength))
+            if (tc.Raycast(ray, out hit, rayLength))
             {
-                if (hit.collider.name == "Terrain_0_0_e6328e0c-e78e-4e73-8b36-fcdb7200ddb6")
-                {
-                    spawnPoint = hit.point;
+                spawnPoint = hit.point;
 
-                    if(FullScan())
-                        foundTarget = true;
+                if (FullScan())
+                {
+                    Debug.Log("WC: Found a target!");
+                    foundTarget = true;
+                }
+                else
+                {
+                    Debug.Log("WC: ChooseTarget try # " + tryCount + " at " + hit.point);
+                    tryCount++;
                 }
             }
         }
+
+        return foundTarget;
     }
 
     public bool FullScan()
     {
-        Collider[] inRange = Physics.OverlapSphere(spawnPoint, allowedDist, (1 << preyMask) | (1 << predMask));
+        Collider[] inRange = Physics.OverlapSphere(spawnPoint, allowedDist, (1 << preyMask) | (1 << predMask) | (1 << obstacleMask));
 
         if (inRange.Length == 0)
             return true;
@@ -124,46 +157,54 @@ public class WorldController : MonoBehaviour
         {
             if (c.attachedRigidbody)
             {
-                Debug.Log("WC: Checking allowed distance!");
+                Debug.Log("WC: Rigidbody detected belongs to " + c.name);
                 // ignore trigger colliders
                 if (!c.isTrigger && (c.attachedRigidbody.position - spawnPoint).magnitude < allowedDist)
                     return false;
             }
+            else
+            {
+                Debug.Log("WC: obstacle detected belongs to " + c.name);
+                if (!c.isTrigger && (c.transform.position - spawnPoint).magnitude < allowedDist)
+                    return false;
+            }
         }
 
+        Debug.Log("WC: Found a spot!");
         return true;
     }
 
     public void RespawnPredInPlace()
     {
         spawnPoint = predator.transform.position;
-        cc.enabled = false;
-        Destroy(predator);
-        Spawn(predPrefab);
+        SpawnPred();
     }
 
-    public void RespawnPredRandom()
+    public void RespawnPredStart()
     {
         Debug.Log("!!!!Predator spawned!!!!");
-        ChooseTarget();
-        cc.enabled = false;
-        Destroy(predator);
-        Spawn(predPrefab);
+        spawnPoint = startPoint;
+        SpawnPred();
     }
 
     public void Spawn(GameObject pf)
     {
-        Debug.Log("!!!!!SPAWNING!!!!!");
+        Debug.Log("!!!!!SPAWNING " + pf.name + "!!!!!");
         // generate random y-axis rotation
         float rot = Random.Range(-180.0f, 180.0f);
 
-        if (pf.tag == "tag_Predator")
-        {
-            predator = Instantiate(pf, spawnPoint, Quaternion.Euler(new Vector3(0.0f, rot, 0.0f)));
-            cc.enabled = true;
-            cc.target = predator.transform;
-        }
-        else
-            Instantiate(pf, spawnPoint, Quaternion.Euler(new Vector3(0.0f, rot, 0.0f)));
+        Instantiate(pf, spawnPoint, Quaternion.Euler(new Vector3(0.0f, rot, 0.0f)));
+    }
+
+    public void SpawnPred()
+    {
+        Debug.Log("!!!!!SPAWNING Predator!!!!!");
+        // generate random y-axis rotation
+        float rot = Random.Range(-180.0f, 180.0f);
+
+        rigid.velocity = Vector3.zero;
+        rigid.angularVelocity = Vector3.zero;
+        rigid.position = spawnPoint;
+        rigid.rotation = Quaternion.Euler(new Vector3(0.0f, rot, 0.0f));
     }
 }

@@ -390,8 +390,8 @@ GameObject:
   - component: {fileID: 7820621536746323228}
   - component: {fileID: 7820621536746323230}
   - component: {fileID: 7820621536746323231}
-  - component: {fileID: 7820621536746323216}
-  - component: {fileID: 7820621536746323217}
+  - component: {fileID: 5537518887674762471}
+  - component: {fileID: 1274072693292178775}
   - component: {fileID: -5611663355675221948}
   m_Layer: 9
   m_Name: Deer_red_IP
@@ -483,7 +483,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 10
+  m_Constraints: 80
   m_CollisionDetection: 0
 --- !u!135 &7820621536746323230
 SphereCollider:
@@ -511,27 +511,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1.5905939, z: 2.0572338}
   m_Center: {x: 0, y: 0.795712, z: 0.3043401}
---- !u!114 &7820621536746323216
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2281496300559636644}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1929f60938014749b9508d858837cc4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetMovePos: {x: 10, y: 0.5, z: 10}
-  anim: {fileID: 0}
-  pred: {fileID: 0}
-  prey: {fileID: 0}
-  rb: {fileID: 0}
-  tColl: {fileID: 0}
-  preyAware: []
-  unseen: []
---- !u!114 &7820621536746323217
+--- !u!114 &5537518887674762471
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -552,8 +532,8 @@ MonoBehaviour:
   speed: 0
   speedDown: 0
   turnRadius: 180
-  viewPointOffset: {x: 0, y: 0, z: 0}
-  viewPoint: {x: 0, y: 0, z: 0}
+  localViewPoint: {x: 0, y: 0, z: 0}
+  globalViewPoint: {x: 0, y: 0, z: 0}
   binocFOV: 60
   breakForce: 900
   fleeSpeed: 20
@@ -562,14 +542,42 @@ MonoBehaviour:
   lostTimeLimit: 30
   maxStandJump: 7.672027
   pMass: 94
-  monocFOV: 250
+  monocFOV: 125
   moveSpeed: 4.470389
   pSize: {x: 0.81, y: 0.81, z: 0.81}
   restTimeLimit: 20
+  watchTimeLimit: 50
   safeFall: 15
   speedUp: 9
-  sprintTimeLimit: 30
+  sprintTimeLimit: 10
   tiredMove: 2
+--- !u!114 &1274072693292178775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2281496300559636644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1929f60938014749b9508d858837cc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetMovePos: {x: 0, y: 0, z: 0}
+  anim: {fileID: 0}
+  prey: {fileID: 0}
+  pred: {fileID: 0}
+  rb: {fileID: 0}
+  tColl: {fileID: 0}
+  awaredPred: []
+  unseenPred: []
+  criticalDist: 0
+  relievingDist: 0
+  isWatchful: 0
+  isEscaping: 0
+  isJumping: 0
+  isCaught: 0
+  lostPred: 0
 --- !u!114 &-5611663355675221948
 MonoBehaviour:
   m_ObjectHideFlags: 0

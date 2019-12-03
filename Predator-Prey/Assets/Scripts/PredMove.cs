@@ -46,6 +46,9 @@ public class PredMove : MonoBehaviour, ILAMove
     // time sprinting
     private float sprintTime = 0.0f;
 
+    // max jump distance at 45-degree angle
+    float maxJumpDist;
+
     // initial slow distance when in Hunt mode; EXPERIMENTAL
     private float slowDist;
 
@@ -69,7 +72,15 @@ public class PredMove : MonoBehaviour, ILAMove
     readonly private float zFrontLimit = 25.0f;
     readonly private float zBackLimit = 200.0f;
     readonly private float safeRayHeight = 60.0f;
-    readonly private float rayLength = 70.0f;
+    readonly private float rayLength = 100.0f;
+
+    // original spawn point in case can't find another suitable location
+    private Vector3 spawnLoc;
+
+    // max number of tries to attempt choosing target
+    // before a default is chosen (avoid infinite loop)
+    readonly int maxTries = 5;
+    private int tryCount = 1;
 
     public void Accelerate(float desSpeed)
     {
@@ -82,7 +93,7 @@ public class PredMove : MonoBehaviour, ILAMove
         rb.MovePosition(rb.position + transform.right * (currSpeed + 0.5f * maxAccel * Time.fixedDeltaTime) * Time.fixedDeltaTime);
     }
 
-    public bool addToAware(Rigidbody other)
+    public bool AddToAware(Rigidbody other)
     {
         bool gotPrey = false;
 
@@ -104,7 +115,7 @@ public class PredMove : MonoBehaviour, ILAMove
     }
 
     // this method assumes prey Rigidbody has already been checked!
-    public bool addToUnseen(Rigidbody other)
+    public bool AddToUnseen(Rigidbody other)
     {
         bool lost = false;
 
@@ -112,17 +123,17 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             UpdatePreyVectors();
             prey = null;
+
+            if (preyAware.Count > 0)
+            {
+                prey = preyAware[0];
+            }
+            else
+                lost = true;
         }
 
         if (preyAware.Contains(other))
             preyAware.Remove(other);
-
-        if (preyAware.Count > 0)
-        {
-            prey = preyAware[0];
-        }
-        else
-            lost = true;
 
         if (!unseen.Contains(other))
             unseen.Add(other);
@@ -174,10 +185,12 @@ public class PredMove : MonoBehaviour, ILAMove
     // OnTriggerStay() is the primary mechanism to decide this
     public void Chase(Collider other)
     {
-        Debug.Log("On the chase!");
+        /*if (other.attachedRigidbody == prey && !other.isTrigger)
+            pmState = PredStates.Pursue; */
 
-        if (other.attachedRigidbody == prey && !other.isTrigger)
-            pmState = PredStates.Pursue;
+        // prey has (likely) left the visible area, so pursue
+
+        pmState = PredStates.Pursue;
     }
 
     // isHunting parameter includes Hunt and Stalk states
@@ -202,7 +215,7 @@ public class PredMove : MonoBehaviour, ILAMove
                 }
                 else
                 {
-                    Debug.Log("Predator: hit " + hit.rigidbody.gameObject.name);
+                    Debug.Log("Predator: FOV hit " + hit.rigidbody.gameObject.name);
                 }
             }
         }
@@ -210,20 +223,32 @@ public class PredMove : MonoBehaviour, ILAMove
         return false;
     }
 
-    // this function assumes any awareness of prey has already been established
-    // used primarily for sphere collider OnTriggerExit
+    // used for sphere collider OnTriggerExit
     bool CheckLost(Collider other)
     {
-        // don't do anything if prey hasn't already been detected
-        // or if Collider is a trigger
-        if (!prey || other.isTrigger)
+        // don't do anything if other Collider is a trigger or has no attached Rigidbody
+        if (other.isTrigger || !other.attachedRigidbody)
             return false;
 
-        if (addToUnseen(other.attachedRigidbody))
+        if (prey && other.attachedRigidbody == prey)
         {
+            UpdatePreyVectors();
+            prey = null;
             lostPrey = true;
+            // can assume prey is not unseen and is in aware list
+            preyAware.Remove(prey);
+            return true;
         }
-        return true;
+
+        // remove from both lists because animals out of sight range
+        if (preyAware.Contains(other.attachedRigidbody))
+            preyAware.Remove(other.attachedRigidbody);
+
+        if (unseen.Contains(other.attachedRigidbody))
+            unseen.Remove(other.attachedRigidbody);
+
+        // target prey was not the lost animal
+        return false;
     }
 
     public bool CheckLostTime()
@@ -242,7 +267,11 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             if (!prey.gameObject.activeSelf)
             {
-                RemoveFromLists(prey);
+                preyAware.Remove(prey);
+                prey = null;
+
+                if (preyAware.Count > 0)
+                    prey = preyAware[0];
 
                 // EXPERIMENTAL
                 slowDist = (targetMovePos - rb.position).magnitude;
@@ -268,6 +297,7 @@ public class PredMove : MonoBehaviour, ILAMove
     {
         if ((seekTime >= seekTimeLimit) || ((targetMovePos - rb.position).magnitude <= seekDistLimit))
         {
+            ResetSeekTime();
             return true;
         }
 
@@ -288,18 +318,18 @@ public class PredMove : MonoBehaviour, ILAMove
     // checks for presence of prey
     public void CheckTrigger(Collider other, bool isHunting)
     {
-        Rigidbody potentPrey = other.attachedRigidbody;
-
         // do nothing if there is no rigidbody
-        if (!potentPrey)
+        if (!other.attachedRigidbody)
             return;
+
+        Rigidbody potentPrey = other.attachedRigidbody;
 
         bool seen = CheckFOV(potentPrey, isHunting);
 
         if (seen)
         {
             // return true if a new prey was found
-            if (addToAware(potentPrey))
+            if (AddToAware(potentPrey))
             {
                 if (pmState == PredStates.Hunt)
                 {
@@ -310,29 +340,34 @@ public class PredMove : MonoBehaviour, ILAMove
         }
     }
 
-    void ChooseTarget()
+    bool ChooseTarget()
     {
         bool foundTarget = false;
         float xCoord = Random.Range(xLeftLimit, xRightLimit);
         float zCoord = Random.Range(zFrontLimit, zBackLimit);
 
-        RaycastHit hit;
+        // targetMovePos = new Vector3(68.0f, 0.7f, 150.0f);
 
-        while (!foundTarget)
+        Ray ray = new Ray(new Vector3(xCoord, safeRayHeight, zCoord), Vector3.down);
+        RaycastHit hit;
+        TerrainCollider tc = Terrain.activeTerrain.GetComponent<TerrainCollider>();
+
+        while (tryCount <= maxTries && !foundTarget)
         {
-            if (Physics.Raycast(new Vector3(xCoord, safeRayHeight, zCoord), Vector3.down, out hit, rayLength))
+            if (tc.Raycast(ray, out hit, rayLength))
             {
-                if (hit.collider.name == "Terrain_0_0_e6328e0c-e78e-4e73-8b36-fcdb7200ddb6")
-                {
-                    targetMovePos = hit.point;
-                    foundTarget = true;
-                }
-                else
-                    Debug.Log("NOPE");
+                targetMovePos = hit.point;
+                foundTarget = true;
+            }
+            else
+            {
+                Debug.Log("PredMove ChooseTarget try # " + tryCount + " at " + hit.point);
+                tryCount++;
             }
         }
 
         Debug.Log("Found a spot!");
+        return foundTarget;
     }
 
     public void Decelerate(float desSpeed)
@@ -366,6 +401,35 @@ public class PredMove : MonoBehaviour, ILAMove
     // All physics calculations and updates occur immediately after FixedUpdate
     void FixedUpdate()
     {
+        if (preyAware.Count > 0)
+        {
+            foreach (Rigidbody p in preyAware)
+            {
+                if (!CheckFOV(p, Hunting()))
+                {
+                    if (AddToUnseen(p))
+                        lostPrey = true;
+                }
+            }
+        }
+
+        if (unseen.Count > 0)
+        {
+            foreach (Rigidbody u in unseen)
+            {
+                if (CheckFOV(u, Hunting()))
+                {
+                    if (AddToAware(u))
+                    {
+                        lostPrey = false;
+
+                        if (pmState == PredStates.Hunt)
+                            pmState = PredStates.Stalk;
+                    }
+                }
+            }
+        }
+
         if (prey)
             UpdatePreyVectors();
 
@@ -373,22 +437,26 @@ public class PredMove : MonoBehaviour, ILAMove
         {
             if (CheckLostTime())
             {
-                ChooseTarget();
+                if (!ChooseTarget())
+                    targetMovePos = spawnLoc;
+
                 pmState = PredStates.Hunt;
             }
             else
             {
                 lostPreyTime += Time.fixedDeltaTime;
-
                 targetMovePos = PredictLostLocation();
-                
-                // predicted prey movement would leave the environment
+
+                // predicted predator movement would leave the environment
                 // abort the chase
                 if (targetMovePos.x < xLeftLimit || targetMovePos.x > xRightLimit ||
                     targetMovePos.z < zFrontLimit || targetMovePos.z > zBackLimit)
                 {
-                    ChooseTarget();
-                    pmState = PredStates.Hunt;
+                    if (!ChooseTarget())
+                        targetMovePos = spawnLoc;
+
+                    if (pmState == PredStates.Pursue)
+                        pmState = PredStates.Hunt;
                 }
             }
 
@@ -401,14 +469,6 @@ public class PredMove : MonoBehaviour, ILAMove
         // set speed for Animator
         anim.SetFloat("animSpeed", currSpeed);
 
-        // JUMP TEST     
-        /*
-        if(!isJumping)
-        {
-            isJumping = true;
-            Jump(new Vector3(0.0f, Mathf.Sin(45.0f * Mathf.Deg2Rad), Mathf.Cos(45.0f * Mathf.Deg2Rad)));
-        } */
-
         if (pmState == PredStates.Rest)
         {
             if (CheckRestTime())
@@ -417,7 +477,8 @@ public class PredMove : MonoBehaviour, ILAMove
                 if (preyAware.Count > 0)
                     prey = preyAware[0];
 
-                ChooseTarget();
+                if (!ChooseTarget())
+                    targetMovePos = spawnLoc;
 
                 slowDist = (targetMovePos - rb.position).magnitude;
                 pmState = PredStates.Hunt;
@@ -455,8 +516,8 @@ public class PredMove : MonoBehaviour, ILAMove
 
             if(CheckSeekLimits())
             {
-                ResetSeekTime();
-                ChooseTarget();
+                if (!ChooseTarget())
+                    targetMovePos = spawnLoc;
             }
             else
             {
@@ -473,6 +534,12 @@ public class PredMove : MonoBehaviour, ILAMove
 
                 Seek(pred.moveSpeed, targetMovePos);
             }
+            else if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Pounce"))
+            {
+                // set Animator to proper state
+                anim.SetBool("isJumping", false);
+                isJumping = false;
+            }
         }
         else if (pmState == PredStates.Pursue)
         {
@@ -484,27 +551,36 @@ public class PredMove : MonoBehaviour, ILAMove
             {
                 sprintTime += Time.fixedDeltaTime;
 
-                if (prey)
+                if (!isJumping)
                 {
-                    preyStats = prey.GetComponent<Prey>();
-
-                    if (preyStats.fleeSpeed == 0.0f || preyStats.GetSpeed() == 0.0f)
+                    if (prey)
                     {
-                        preyFuturePos = prey.position;
+                        preyStats = prey.GetComponent<Prey>();
+
+                        if (preyStats.fleeSpeed == 0.0f || preyStats.GetSpeed() == 0.0f)
+                        {
+                            preyFuturePos = prey.position;
+                        }
+                        else
+                        {
+                            // preyFuturePos = prey.position + preyStats.GetSpeed() * (DirToTarget(prey.position, rb.position) / preyStats.fleeSpeed);
+                            // preyFuturePos = prey.position + preyStats.GetVelocity() * Time.fixedDeltaTime;
+                            preyFuturePos = GetFuturePos(prey.position, preyStats.GetVelocity(), true);
+                        }
+
+                        Seek(pred.chaseSpeed, preyFuturePos);
+
+                        Debug.Log("distance to Prey is " + (DirToTarget(prey.position, rb.position)).magnitude);
                     }
                     else
-                    {
-                        // preyFuturePos = prey.position + preyStats.GetSpeed() * (DirToTarget(prey.position, rb.position) / preyStats.fleeSpeed);
-                        // preyFuturePos = prey.position + preyStats.GetVelocity() * Time.fixedDeltaTime;
-                        preyFuturePos = GetFuturePos(prey.position, preyStats.GetVelocity(), true);
-                    }
-
-                    Seek(pred.chaseSpeed, preyFuturePos);
-
-                    Debug.Log("distance to Prey is " + (DirToTarget(prey.position, rb.position)).magnitude);
+                        Seek(pred.chaseSpeed, GetFuturePos(lastPreyLocation, lastPreyVelocity, true));
                 }
-                else
-                    Seek(pred.chaseSpeed, GetFuturePos(lastPreyLocation, lastPreyVelocity, true));
+                else if (!anim.GetCurrentAnimatorStateInfo(0).IsName("Pounce"))
+                {
+                    // set Animator to proper state
+                    anim.SetBool("isJumping", false);
+                    isJumping = false;
+                }
             }
             else
             {
@@ -517,11 +593,26 @@ public class PredMove : MonoBehaviour, ILAMove
         else if (pmState == PredStates.Stalk)
         {
             Debug.Log(".......Stalking........");
-            Vector3 preyPos;
 
-            anim.SetBool("isStalking", true);
-            preyPos = prey.position;
-            Seek(pred.stalkSpeed, preyPos);
+            Vector3 direction = DirToTarget(prey.position, rb.position);
+
+            if (direction.magnitude <= maxJumpDist)
+            {
+                isJumping = true;
+                anim.SetBool("isJumping", true);
+
+                Jump(new Vector3(direction.x, Mathf.Sin(45.0f * Mathf.Deg2Rad) * direction.y,
+                    Mathf.Cos(45.0f * Mathf.Deg2Rad) * direction.z).normalized,
+                    JumpVelocNeeded(DirToTarget(prey.position, rb.position).magnitude));
+
+                pmState = PredStates.Pursue;
+            }
+
+            if (!isJumping)
+            {
+                anim.SetBool("isStalking", true);
+                Seek(pred.stalkSpeed, prey.position);
+            }
         }
 
         CheckPreyEaten();
@@ -564,16 +655,23 @@ public class PredMove : MonoBehaviour, ILAMove
         return false;
     }
 
-    public void Jump(Vector3 normalVec)
+    public void Jump(Vector3 normalVec, float initSpeed)
     {
         // set Animator to proper state
-        anim.SetTrigger("jumpTrigger");
         anim.SetBool("isJumping", true);
 
-        pred.rb.velocity = (normalVec * pred.maxStandJump);
+        pred.rb.velocity = (normalVec * initSpeed);
+    }
 
-        // ACTUALLY DO THIS WHEN KNOW TRANSITIONED TO ANOTHER STATE
-        anim.SetBool("isJumping", false);
+    public float MaxJumpDistCalc()
+    {
+        // assumes jump at optimal angle for distance
+        return Mathf.Pow(pred.maxStandJump, 2.0f) / 9.81f;
+    }
+
+    public float JumpVelocNeeded(float dist)
+    {
+        return Mathf.Sqrt(dist * 9.81f);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -583,37 +681,16 @@ public class PredMove : MonoBehaviour, ILAMove
 
     private void OnTriggerExit(Collider other)
     {
-        // don't do anything if collider has no Rigidbody
-        if (!other.attachedRigidbody)
-            return;
-
-        if (!CheckLost(other))
-            RemoveFromLists(other.attachedRigidbody);
-
-        if (pmState == PredStates.Stalk)
-            Chase(other);
+        if (CheckLost(other) && pmState == PredStates.Stalk)
+        {
+            pmState = PredStates.Pursue;
+            anim.SetBool("isStalking", false);
+        }
     }
 
     public Vector3 PredictLostLocation()
     {
         return lastPreyLocation + lastPreyVelocity * lostPreyTime;
-    }
-
-    public void RemoveFromLists(Rigidbody gone)
-    {
-        if (preyAware.Contains(gone))
-            preyAware.Remove(gone);
-
-        if (unseen.Contains(gone))
-            unseen.Remove(gone);
-
-        if (gone == prey)
-        {
-            prey = null;
-
-            if (preyAware.Count > 0)
-                prey = preyAware[0];
-        }
     }
 
     public void ResetLost()
@@ -713,7 +790,12 @@ public class PredMove : MonoBehaviour, ILAMove
         tColl.radius = pred.depthPerception;
 
         slowDist = (targetMovePos - rb.position).magnitude;
-        ChooseTarget();
+        spawnLoc = rb.position;
+
+        maxJumpDist = MaxJumpDistCalc();
+
+        if (!ChooseTarget())
+            targetMovePos = spawnLoc;
         pmState = PredStates.Hunt;
 
         // Look for existing targets only 
